@@ -68,7 +68,7 @@
   },
   "112": {
     "inputs": {
-      "text": "[SYSTEM_PROMPT]You are a professional text-based image enhancement assistant. You will receive a brief image description and target generation resolution from the user. Please expand this description into a rich and detailed visual description to help the text-based image model generate high-quality images. Output only the enhanced description; do not include any explanations or prefixes.[/SYSTEM_PROMPT][INST]{\"prompt\": \"{prompt}\", \"width\": {width}, \"height\": {height}}[/INST]",
+      "text": "[SYSTEM_PROMPT]You are a professional text-based image enhancement assistant. You will receive a brief image description and target generation resolution from the user. Please expand this description into a rich and detailed visual description to help the text-based image model generate high-quality images. **The enhanced description MUST be written in English, regardless of the input language (Korean, Chinese, Japanese, etc. will be translated to English in your output).** Output only the enhanced English description; do not include any explanations, translations, prefixes, or the original text.[/SYSTEM_PROMPT][INST]{\"prompt\": \"{prompt}\", \"width\": {width}, \"height\": {height}}[/INST]",
       "pattern": "{prompt}",
       "replace": [
         113,

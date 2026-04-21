@@ -144,6 +144,12 @@ python "system/skills/comfyui/scripts/comfyui_client.py" \
   }
   ```
 
+## 프롬프트 인헨서 언어
+
+Ernie의 기본 인헨서는 학습 특성상 중국어로 출력되는 경향이 있다. 이 스킬은 **영어 출력을 강제**하도록 시스템 프롬프트를 수정해 둠 (`id=112` StringReplace 노드의 템플릿에 "MUST be written in English" 지시 포함). 한국어 프롬프트 입력해도 인헨서 출력은 영어. CLIPTextEncode(Mistral-3)는 영어·중문·다국어 모두 처리 가능하므로 프롬프트 품질에 문제없음.
+
+원본 중문 출력 동작으로 돌리려면: UI JSON 3개의 id=112 widgets_values[0]에서 "MUST be written in English..." 문장 제거 후 `--export-api` 재실행.
+
 ## 브랜드 통합 — 경계 명시
 
 이 스킬은 **엔진 레이어**다. 의도적으로 브랜드 중립:
