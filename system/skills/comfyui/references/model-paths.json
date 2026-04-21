@@ -1,0 +1,77 @@
+{
+  "$description": "ERNIE-Image 모델 파일 ↔ ComfyUI 폴더 ↔ HuggingFace 다운로드 URL 맵",
+  "comfyui_root": "~/ComfyUI",
+  "hf_repo": "Comfy-Org/ERNIE-Image",
+  "hf_base_url": "https://huggingface.co/Comfy-Org/ERNIE-Image/resolve/main",
+  "license": "Apache-2.0 (baidu/ERNIE-Image 원본)",
+  "total_size_gb": 47.1,
+  "files": [
+    {
+      "purpose": "Ernie Image Turbo diffusion model (8 steps, DMD+RL optimized)",
+      "local_path": "models/diffusion_models/ernie-image-turbo.safetensors",
+      "hf_path": "diffusion_models/ernie-image-turbo.safetensors",
+      "used_by_modes": ["turbo", "custom"],
+      "approximate_size_gb": 16
+    },
+    {
+      "purpose": "Ernie Image base diffusion model (50 steps, best quality)",
+      "local_path": "models/diffusion_models/ernie-image.safetensors",
+      "hf_path": "diffusion_models/ernie-image.safetensors",
+      "used_by_modes": ["pro", "custom"],
+      "approximate_size_gb": 16
+    },
+    {
+      "purpose": "Mistral-3 3B text encoder (main prompt encoder)",
+      "local_path": "models/text_encoders/ministral-3-3b.safetensors",
+      "hf_path": "text_encoders/ministral-3-3b.safetensors",
+      "used_by_modes": ["turbo", "pro", "custom"],
+      "approximate_size_gb": 6
+    },
+    {
+      "purpose": "Ernie prompt enhancer text encoder (optional enhance path)",
+      "local_path": "models/text_encoders/ernie-image-prompt-enhancer.safetensors",
+      "hf_path": "text_encoders/ernie-image-prompt-enhancer.safetensors",
+      "used_by_modes": ["turbo", "pro", "custom"],
+      "approximate_size_gb": 8
+    },
+    {
+      "purpose": "Flux 2 VAE (공용. Flux.2 Dev 쓰던 분은 재다운 불필요)",
+      "local_path": "models/vae/flux2-vae.safetensors",
+      "hf_path": "vae/flux2-vae.safetensors",
+      "used_by_modes": ["turbo", "pro", "custom"],
+      "approximate_size_gb": 0.3
+    }
+  ],
+  "workflow_node_mapping": {
+    "$description": "UI 워크플로우 JSON 내 노드 ID ↔ 역할 (API 포맷 변환·뮤테이션 시 참조)",
+    "53_1_turbo": {
+      "width_node_id": 123,
+      "height_node_id": 124,
+      "prompt_enhance_toggle_id": 115,
+      "prompt_string_id": 106,
+      "ksampler_id": 107,
+      "diffusion_model_loader_id": 105,
+      "vae_loader_id": 110,
+      "prompt_encoder_clip_loader_id": 117,
+      "mistral_clip_loader_id": 109
+    },
+    "53_2_pro": {
+      "width_node_id": 123,
+      "height_node_id": 124,
+      "prompt_enhance_toggle_id": 115,
+      "prompt_string_id": 106,
+      "ksampler_id": 107,
+      "diffusion_model_loader_id": 105,
+      "vae_loader_id": 110
+    },
+    "53_3_custom": {
+      "width_node_id": 123,
+      "height_node_id": 124,
+      "prompt_enhance_toggle_id": 115,
+      "prompt_string_id": 106,
+      "ksampler_turbo_id": null,
+      "ksampler_pro_id": null,
+      "$note": "실제 노드 ID는 --export-api 실행 결과 확인 후 이 파일 갱신"
+    }
+  }
+}

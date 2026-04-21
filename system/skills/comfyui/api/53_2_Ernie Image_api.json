@@ -1,0 +1,316 @@
+{
+  "123": {
+    "inputs": {
+      "value": 960
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Width"
+    }
+  },
+  "124": {
+    "inputs": {
+      "value": 1280
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Height"
+    }
+  },
+  "115": {
+    "inputs": {
+      "value": true
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Prompt Enhance"
+    }
+  },
+  "106": {
+    "inputs": {
+      "samples": [
+        107,
+        0
+      ],
+      "vae": [
+        110,
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "118": {
+    "inputs": {
+      "source": [
+        123,
+        0
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Preview as Text (Int to String)"
+    }
+  },
+  "119": {
+    "inputs": {
+      "source": [
+        124,
+        0
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Preview as Text (Int to String)"
+    }
+  },
+  "112": {
+    "inputs": {
+      "text": "[SYSTEM_PROMPT]You are a professional text-based image enhancement assistant. You will receive a brief image description and target generation resolution from the user. Please expand this description into a rich and detailed visual description to help the text-based image model generate high-quality images. Output only the enhanced description; do not include any explanations or prefixes.[/SYSTEM_PROMPT][INST]{\"prompt\": \"{prompt}\", \"width\": {width}, \"height\": {height}}[/INST]",
+      "pattern": "{prompt}",
+      "replace": [
+        113,
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "StringReplace"
+    }
+  },
+  "120": {
+    "inputs": {
+      "text": "",
+      "pattern": "{width}",
+      "replace": [
+        118,
+        0
+      ],
+      "string": [
+        112,
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "StringReplace"
+    }
+  },
+  "121": {
+    "inputs": {
+      "text": "",
+      "pattern": "{height}",
+      "replace": [
+        119,
+        0
+      ],
+      "string": [
+        120,
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "StringReplace"
+    }
+  },
+  "116": {
+    "inputs": {
+      "switch": [
+        115,
+        0
+      ],
+      "on_false": [
+        113,
+        0
+      ],
+      "on_true": [
+        114,
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "ComfySwitchNode"
+    }
+  },
+  "117": {
+    "inputs": {
+      "clip_name": "Ernie Image\\ernie-image-prompt-enhancer.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP (PE)"
+    }
+  },
+  "122": {
+    "inputs": {
+      "source": [
+        116,
+        0
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Preview as Text (Int to String)"
+    }
+  },
+  "110": {
+    "inputs": {
+      "vae_name": "Flux2\\flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "109": {
+    "inputs": {
+      "clip_name": "Ernie Image\\ministral-3-3b.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "128": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        109,
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "108": {
+    "inputs": {
+      "text": [
+        116,
+        0
+      ],
+      "clip": [
+        109,
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "104": {
+    "inputs": {
+      "width": [
+        123,
+        0
+      ],
+      "height": [
+        124,
+        0
+      ],
+      "batch_size": 1
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "EmptyFlux2LatentImage"
+    }
+  },
+  "105": {
+    "inputs": {
+      "unet_name": "Ernie Image\\ernie-image.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "114": {
+    "inputs": {
+      "prompt": [
+        121,
+        0
+      ],
+      "max_new_tokens": 2048,
+      "do_sample": "on",
+      "temperature": 0.6,
+      "top_k": 64,
+      "top_p": 0.8,
+      "min_p": 0.05,
+      "repetition_penalty": 1.05,
+      "seed": 0,
+      "skip_special_tokens": false,
+      "stream": true,
+      "clip": [
+        117,
+        0
+      ]
+    },
+    "class_type": "TextGenerate",
+    "_meta": {
+      "title": "TextGenerate"
+    }
+  },
+  "113": {
+    "inputs": {
+      "value": "Social Commerce Photo, a pretty young woman"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "String (Multiline - Prompt)"
+    }
+  },
+  "107": {
+    "inputs": {
+      "seed": 423299999918804,
+      "steps": 50,
+      "cfg": 4,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        105,
+        0
+      ],
+      "positive": [
+        108,
+        0
+      ],
+      "negative": [
+        128,
+        0
+      ],
+      "latent_image": [
+        104,
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "73": {
+    "inputs": {
+      "filename_prefix": "Ernie/ComfyUI",
+      "images": [
+        106,
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "SaveImage"
+    }
+  }
+}

@@ -1,0 +1,523 @@
+#!/usr/bin/env python3
+"""ComfyUI ERNIE-Image 클라이언트.
+
+서브커맨드:
+  --download-models   모델 5종을 ~/ComfyUI/models/ 에 다운로드
+  --export-api        UI 워크플로우 → API 포맷 변환
+  --check-setup       서버·모델·워크플로우 상태 점검
+  --mode X --prompt Y 이미지 생성 (메인 경로)
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import random
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from datetime import datetime
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_DIR = SCRIPT_DIR.parent
+REFERENCES_DIR = SKILL_DIR / "references"
+API_DIR = SKILL_DIR / "api"
+COMFYUI_ROOT = Path.home() / "ComfyUI"
+SERVER_URL = "http://127.0.0.1:8188"
+
+# UI widget → API input 매핑. "__skip__" = UI 전용, API에는 포함 안 함.
+WIDGET_INPUTS: dict[str, list[str]] = {
+    "PrimitiveInt": ["value", "__skip__"],
+    "PrimitiveFloat": ["value", "__skip__"],
+    "PrimitiveString": ["value"],
+    "PrimitiveStringMultiline": ["value"],
+    "PrimitiveBoolean": ["value"],
+    "PrimitiveAny": ["value"],
+    "String": ["value"],
+    "KSampler": ["seed", "__skip__", "steps", "cfg", "sampler_name", "scheduler", "denoise"],
+    "KSamplerAdvanced": [
+        "add_noise", "noise_seed", "__skip__", "steps", "cfg",
+        "sampler_name", "scheduler", "start_at_step", "end_at_step",
+        "return_with_leftover_noise",
+    ],
+    "UNETLoader": ["unet_name", "weight_dtype"],
+    "VAELoader": ["vae_name"],
+    "CLIPLoader": ["clip_name", "type", "device"],
+    "DualCLIPLoader": ["clip_name1", "clip_name2", "type", "device"],
+    "CheckpointLoaderSimple": ["ckpt_name"],
+    "ModelSamplingSD3": ["shift"],
+    "CLIPTextEncode": ["text"],
+    "ConditioningZeroOut": [],
+    "EmptyLatentImage": ["width", "height", "batch_size"],
+    "EmptyFlux2LatentImage": ["width", "height", "batch_size"],
+    "EmptySD3LatentImage": ["width", "height", "batch_size"],
+    "VAEDecode": [],
+    "VAEEncode": [],
+    "SaveImage": ["filename_prefix"],
+    "PreviewImage": [],
+    "PreviewAny": [],
+    "CLIPSetLastLayer": ["stop_at_clip_layer"],
+    "LoraLoader": ["lora_name", "strength_model", "strength_clip"],
+    "StringReplace": ["text", "pattern", "replace"],
+    # ComfyUI-Easy-Use 스위치: switch 입력은 대부분 링크로 연결되므로 위젯 디폴트는 무시됨
+    "ComfySwitchNode": ["switch"],
+    # TextGenerate (프롬프트 인헨서) 위젯 — prompt는 링크 연결이라 위젯값 덮어쓰지 않음.
+    # 나머지 위젯 이름은 추정값이므로 --enhance 시 에러 나면 ComfyUI UI에서 API 포맷으로 저장할 것.
+    "TextGenerate": [
+        "prompt", "max_new_tokens", "do_sample", "temperature",
+        "top_k", "top_p", "min_p", "repetition_penalty",
+        "seed", "__skip__", "skip_special_tokens", "stream",
+    ],
+}
+
+MODES: dict[str, dict] = {
+    "turbo": {
+        "ui_json": "53_1_Ernie Image Turbo.json",
+        "api_json": "53_1_Ernie Image Turbo_api.json",
+        "steps": 8, "cfg": 1.0,
+    },
+    "pro": {
+        "ui_json": "53_2_Ernie Image.json",
+        "api_json": "53_2_Ernie Image_api.json",
+        "steps": 50, "cfg": 4.0,
+    },
+    "custom": {
+        "ui_json": "53_3_Ernie Image Custom.json",
+        "api_json": "53_3_Ernie Image Custom_api.json",
+        "steps": 20, "cfg": 4.0,
+    },
+}
+
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
+def http_get(url: str, timeout: float = 30) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": "fpof-comfyui-client/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read()
+
+
+def http_post_json(url: str, data: dict, timeout: float = 30) -> dict:
+    body = json.dumps(data).encode("utf-8")
+    req = urllib.request.Request(
+        url, data=body,
+        headers={"Content-Type": "application/json", "User-Agent": "fpof-comfyui-client/1.0"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        try:
+            detail = e.read().decode("utf-8", errors="replace")
+        except Exception:
+            detail = ""
+        raise RuntimeError(f"HTTP {e.code} on POST {url}\n{detail}") from e
+
+
+def server_health() -> bool:
+    try:
+        req = urllib.request.Request(f"{SERVER_URL}/")
+        with urllib.request.urlopen(req, timeout=3) as r:
+            return 200 <= r.status < 400
+    except Exception:
+        return False
+
+
+def ui_to_api(ui: dict) -> tuple[dict, set[str]]:
+    """UI 포맷 워크플로우 → API 포맷 dict.
+
+    반환: (api_workflow, unknown_class_types)
+    """
+    link_map: dict[int, list[int]] = {}
+    for link in ui.get("links") or []:
+        if isinstance(link, list) and len(link) >= 5:
+            link_id, src_node, src_slot = link[0], link[1], link[2]
+            link_map[link_id] = [src_node, src_slot]
+
+    api: dict[str, dict] = {}
+    unknown: set[str] = set()
+
+    for node in ui.get("nodes") or []:
+        node_id = str(node["id"])
+        class_type = node["type"]
+        inputs: dict = {}
+
+        # 1) 위젯 디폴트 먼저 — 매핑 없는 클래스는 위젯 있을 때만 unknown으로 신고
+        widget_names = WIDGET_INPUTS.get(class_type)
+        widgets = node.get("widgets_values") or []
+        if widget_names is None:
+            if widgets:
+                unknown.add(class_type)
+        else:
+            for i, name in enumerate(widget_names):
+                if i < len(widgets) and name != "__skip__":
+                    inputs[name] = widgets[i]
+
+        # 2) 링크가 있으면 위젯 덮어쓰기 — 링크 우선
+        for inp in node.get("inputs") or []:
+            name = inp.get("name")
+            link_id = inp.get("link")
+            if name and link_id is not None and link_id in link_map:
+                inputs[name] = link_map[link_id]
+
+        api[node_id] = {
+            "inputs": inputs,
+            "class_type": class_type,
+            "_meta": {"title": node.get("title") or class_type},
+        }
+
+    return api, unknown
+
+
+def cmd_export_api(args) -> int:
+    API_DIR.mkdir(exist_ok=True, parents=True)
+    any_unknown: set[str] = set()
+    for mode, spec in MODES.items():
+        src = SKILL_DIR / spec["ui_json"]
+        dst = API_DIR / spec["api_json"]
+        if not src.exists():
+            eprint(f"[skip] {mode}: source not found {src}")
+            continue
+        with open(src) as f:
+            ui = json.load(f)
+        api, unknown = ui_to_api(ui)
+        any_unknown |= unknown
+        with open(dst, "w") as f:
+            json.dump(api, f, indent=2, ensure_ascii=False)
+        print(f"[ok] {mode}: {src.name} → api/{dst.name}  ({len(api)} nodes)")
+
+    if any_unknown:
+        eprint()
+        eprint(f"[warning] Unknown node types — widget inputs may be missing:")
+        for t in sorted(any_unknown):
+            eprint(f"  - {t}")
+        eprint("If ComfyUI complains about missing inputs, open the workflow in ComfyUI UI")
+        eprint("and save again via File → Save (API Format). Overwrite files under api/.")
+    return 0
+
+
+def cmd_download_models(args) -> int:
+    paths_file = REFERENCES_DIR / "model-paths.json"
+    with open(paths_file) as f:
+        cfg = json.load(f)
+    try:
+        from huggingface_hub import hf_hub_download  # type: ignore
+    except ImportError:
+        eprint("Installing huggingface_hub...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "huggingface_hub"])
+        from huggingface_hub import hf_hub_download  # type: ignore
+
+    repo = cfg["hf_repo"]
+    models_dir = COMFYUI_ROOT / "models"
+    models_dir.mkdir(exist_ok=True, parents=True)
+
+    for spec in cfg["files"]:
+        rel_path = spec["local_path"].replace("models/", "", 1)
+        local_path = models_dir / rel_path
+        local_path.parent.mkdir(exist_ok=True, parents=True)
+
+        if local_path.exists():
+            size_mb = local_path.stat().st_size / (1024 * 1024)
+            print(f"[skip] {rel_path} ({size_mb:.0f} MB)")
+            continue
+
+        approx = spec.get("approximate_size_gb", "?")
+        print(f"[download] {spec['hf_path']} → {rel_path} (~{approx} GB)")
+        downloaded = hf_hub_download(
+            repo_id=repo,
+            filename=spec["hf_path"],
+            local_dir=str(models_dir),
+        )
+        print(f"  saved: {downloaded}")
+    print("\nAll models ready.")
+    return 0
+
+
+def cmd_check_setup(args) -> int:
+    ok = True
+    print("=== ComfyUI setup check ===")
+    print(f"ComfyUI root   : {COMFYUI_ROOT} — {'OK' if COMFYUI_ROOT.exists() else 'MISSING'}")
+    if not COMFYUI_ROOT.exists():
+        ok = False
+
+    venv = COMFYUI_ROOT / ".venv" / "bin" / "python"
+    print(f"Python venv    : {venv} — {'OK' if venv.exists() else 'MISSING'}")
+    if not venv.exists():
+        ok = False
+
+    print(f"Server         : {SERVER_URL} — {'UP' if server_health() else 'DOWN'}")
+
+    print()
+    print("Models:")
+    paths_file = REFERENCES_DIR / "model-paths.json"
+    if paths_file.exists():
+        with open(paths_file) as f:
+            cfg = json.load(f)
+        for spec in cfg["files"]:
+            p = COMFYUI_ROOT / spec["local_path"]
+            status = f"OK ({p.stat().st_size/(1024**3):.1f} GB)" if p.exists() else "MISSING"
+            print(f"  {spec['local_path']:<60} {status}")
+            if not p.exists():
+                ok = False
+
+    print()
+    print("API workflows:")
+    for mode, spec in MODES.items():
+        p = API_DIR / spec["api_json"]
+        status = "OK" if p.exists() else "MISSING (run --export-api)"
+        print(f"  {mode:<7}  {spec['api_json']:<50} {status}")
+        if not p.exists():
+            ok = False
+
+    print()
+    print("Overall:", "READY" if ok else "NOT READY")
+    return 0 if ok else 1
+
+
+def find_node_by_class(api_wf: dict, class_type: str) -> str | None:
+    for nid, node in api_wf.items():
+        if node.get("class_type") == class_type:
+            return nid
+    return None
+
+
+def find_node_by_title(api_wf: dict, title_substr: str, class_type: str | None = None) -> str | None:
+    for nid, node in api_wf.items():
+        meta_title = (node.get("_meta") or {}).get("title", "")
+        if title_substr.lower() in meta_title.lower():
+            if class_type is None or node.get("class_type") == class_type:
+                return nid
+    return None
+
+
+def normalize_model_paths(api_wf: dict) -> None:
+    """튜토리얼 워크플로우는 'Ernie Image\\\\*.safetensors' 같은 서브폴더·백슬래시 경로를 쓴다.
+
+    ComfyUI의 표준 flat 구조(~/ComfyUI/models/diffusion_models/<file>)에 맞춰
+    백슬래시를 forward slash로 바꾸고 'Ernie Image/'·'Flux2/' 접두사는 스트립.
+    (모델을 서브폴더에 두고 싶으면 이 함수 호출을 빼면 됨.)
+    """
+    rules = {
+        "UNETLoader": ["unet_name"],
+        "VAELoader": ["vae_name"],
+        "CLIPLoader": ["clip_name"],
+        "DualCLIPLoader": ["clip_name1", "clip_name2"],
+        "CheckpointLoaderSimple": ["ckpt_name"],
+    }
+    prefixes = ("Ernie Image/", "Flux2/")
+    for node in api_wf.values():
+        names = rules.get(node.get("class_type"))
+        if not names:
+            continue
+        for inp_name in names:
+            val = node["inputs"].get(inp_name)
+            if not isinstance(val, str):
+                continue
+            v = val.replace("\\", "/")
+            for pref in prefixes:
+                if v.startswith(pref):
+                    v = v[len(pref):]
+                    break
+            node["inputs"][inp_name] = v
+
+
+def mutate_workflow(api_wf: dict, args) -> tuple[dict, int]:
+    """프롬프트·시드·해상도·인헨서 값을 API 워크플로우에 주입."""
+    normalize_model_paths(api_wf)
+
+    prompt_id = find_node_by_class(api_wf, "PrimitiveStringMultiline")
+    width_id = find_node_by_title(api_wf, "Width", "PrimitiveInt")
+    height_id = find_node_by_title(api_wf, "Height", "PrimitiveInt")
+    enhance_id = find_node_by_class(api_wf, "PrimitiveBoolean")
+
+    if prompt_id:
+        api_wf[prompt_id]["inputs"]["value"] = args.prompt
+    else:
+        eprint("[warn] No PrimitiveStringMultiline node found — prompt not injected")
+
+    if width_id:
+        api_wf[width_id]["inputs"]["value"] = args.width
+    if height_id:
+        api_wf[height_id]["inputs"]["value"] = args.height
+
+    if enhance_id is not None:
+        api_wf[enhance_id]["inputs"]["value"] = bool(args.enhance)
+
+    seed_val = args.seed if args.seed >= 0 else random.randint(1, 2**31 - 1)
+    for nid, node in api_wf.items():
+        ct = node.get("class_type")
+        if ct == "KSampler":
+            node["inputs"]["seed"] = seed_val
+        elif ct == "KSamplerAdvanced":
+            node["inputs"]["noise_seed"] = seed_val
+
+    return api_wf, seed_val
+
+
+def submit_and_wait(api_wf: dict, timeout: float = 600) -> tuple[str, dict]:
+    client_id = hashlib.md5(str(time.time()).encode()).hexdigest()
+    resp = http_post_json(f"{SERVER_URL}/prompt", {"prompt": api_wf, "client_id": client_id})
+    prompt_id = resp.get("prompt_id")
+    if not prompt_id:
+        raise RuntimeError(f"No prompt_id returned: {resp}")
+
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            raw = http_get(f"{SERVER_URL}/history/{prompt_id}", timeout=10)
+            hist = json.loads(raw)
+            if prompt_id in hist:
+                entry = hist[prompt_id]
+                status = entry.get("status", {})
+                if status.get("completed") or status.get("status_str") == "success":
+                    return prompt_id, entry.get("outputs") or {}
+                if status.get("status_str") == "error":
+                    msgs = status.get("messages") or []
+                    raise RuntimeError(f"Generation error: {json.dumps(msgs, ensure_ascii=False)[:500]}")
+        except urllib.error.URLError as e:
+            raise RuntimeError(f"Server unreachable during polling: {e}") from e
+        time.sleep(1.5)
+
+    raise TimeoutError(f"Generation exceeded {timeout}s")
+
+
+def download_outputs(outputs: dict, out_dir: Path, basename: str) -> list[Path]:
+    saved: list[Path] = []
+    for node_id, node_out in outputs.items():
+        for idx, img in enumerate(node_out.get("images") or []):
+            params = urllib.parse.urlencode({
+                "filename": img["filename"],
+                "subfolder": img.get("subfolder", ""),
+                "type": img.get("type", "output"),
+            })
+            url = f"{SERVER_URL}/view?{params}"
+            data = http_get(url, timeout=180)
+
+            ext = Path(img["filename"]).suffix or ".png"
+            suffix = "" if len(saved) == 0 else f"_{len(saved)}"
+            out_file = out_dir / f"{basename}{suffix}{ext}"
+            out_file.write_bytes(data)
+            saved.append(out_file)
+    return saved
+
+
+def cmd_generate(args) -> int:
+    if args.mode not in MODES:
+        eprint(f"[error] Unknown mode: {args.mode}")
+        return 2
+    spec = MODES[args.mode]
+
+    if not server_health():
+        eprint(f"[error] ComfyUI server not reachable at {SERVER_URL}")
+        eprint(f"Start it: cd ~/ComfyUI && .venv/bin/python main.py --listen 127.0.0.1 --port 8188")
+        return 3
+
+    api_path = API_DIR / spec["api_json"]
+    if not api_path.exists():
+        eprint(f"[info] API workflow missing, exporting first: {api_path.name}")
+        cmd_export_api(args)
+    if not api_path.exists():
+        eprint(f"[error] Cannot produce API workflow. Export manually via ComfyUI UI.")
+        return 4
+
+    with open(api_path) as f:
+        api_wf = json.load(f)
+
+    out_dir = Path(args.out).expanduser().resolve()
+    out_dir.mkdir(exist_ok=True, parents=True)
+
+    t0 = time.time()
+    api_wf, seed = mutate_workflow(api_wf, args)
+
+    try:
+        prompt_id, outputs = submit_and_wait(api_wf, timeout=args.timeout)
+    except Exception as e:
+        eprint(f"[error] {e}")
+        ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+        fail = {
+            "status": "failed",
+            "error": str(e),
+            "mode": args.mode,
+            "prompt": args.prompt,
+            "seed": seed,
+            "duration_ms": int((time.time() - t0) * 1000),
+        }
+        fail_file = out_dir / f"{ts}_{args.mode}_{seed}_FAILED.json"
+        fail_file.write_text(json.dumps(fail, indent=2, ensure_ascii=False))
+        eprint(f"[meta] {fail_file}")
+        return 5
+
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S")
+    basename = f"{ts}_{args.mode}_{seed}"
+    saved = download_outputs(outputs, out_dir, basename)
+
+    duration_ms = int((time.time() - t0) * 1000)
+    meta = {
+        "status": "success" if saved else "success_no_image",
+        "mode": args.mode,
+        "prompt": args.prompt,
+        "enhance": bool(args.enhance),
+        "seed": seed,
+        "width": args.width,
+        "height": args.height,
+        "steps": spec["steps"],
+        "cfg": spec["cfg"],
+        "sampler": "euler",
+        "scheduler": "simple",
+        "duration_ms": duration_ms,
+        "prompt_id": prompt_id,
+        "images": [str(p) for p in saved],
+        "comfyui_server": SERVER_URL,
+        "timestamp": datetime.now().isoformat(),
+    }
+    meta_file = out_dir / f"{basename}.json"
+    meta_file.write_text(json.dumps(meta, indent=2, ensure_ascii=False))
+
+    print(f"[ok] {len(saved)} image(s) in {out_dir}")
+    for p in saved:
+        print(f"  {p}")
+    print(f"  meta: {meta_file}")
+    print(f"  seed: {seed}   duration: {duration_ms/1000:.1f}s")
+    return 0
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description="ComfyUI ERNIE-Image client")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--download-models", action="store_true")
+    g.add_argument("--export-api", action="store_true")
+    g.add_argument("--check-setup", action="store_true")
+
+    p.add_argument("--mode", choices=list(MODES.keys()))
+    p.add_argument("--prompt", type=str, default="")
+    p.add_argument("--width", type=int, default=960)
+    p.add_argument("--height", type=int, default=1280)
+    p.add_argument("--seed", type=int, default=-1)
+    p.add_argument("--enhance", type=lambda v: str(v).lower() in {"true", "1", "yes"}, default=True)
+    p.add_argument("--out", type=str, default="./comfyui-out")
+    p.add_argument("--timeout", type=float, default=600)
+
+    args = p.parse_args()
+
+    if args.download_models:
+        return cmd_download_models(args)
+    if args.export_api:
+        return cmd_export_api(args)
+    if args.check_setup:
+        return cmd_check_setup(args)
+    if args.mode and args.prompt:
+        return cmd_generate(args)
+
+    p.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
