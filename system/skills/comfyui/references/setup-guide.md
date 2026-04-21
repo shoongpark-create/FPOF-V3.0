@@ -96,5 +96,5 @@ python system/skills/comfyui/scripts/comfyui_client.py \
 
 - **MPS/Metal 에러**: PyTorch 2.3+ 필요. `pip install -U torch torchvision torchaudio`.
 - **`ERROR: Missing node type 'EmptyFlux2LatentImage'`**: ComfyUI 최신 아닐 때. `cd ~/ComfyUI && git pull`.
-- **디스크 부족**: Klein 4B·과거 Flux 모델이 남아 있을 수 있음. `du -sh ~/ComfyUI/models/*` 로 확인.
+- **디스크 부족**: 과거 모델 잔존 가능. `du -sh ~/ComfyUI/models/*` 로 확인 후 불필요한 파일 삭제.
 - **메모리 부족 (64GB 이하)**: 해상도 내리기(960→512) 또는 `--lowvram` 플래그 추가.
