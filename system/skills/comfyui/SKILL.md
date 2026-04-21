@@ -28,29 +28,49 @@ cd ~/ComfyUI && uv venv --python 3.12 .venv
 .venv/bin/python -m pip install torch torchvision torchaudio  # MPS
 ```
 
-### 2) 모델 파일 (~47GB)
-`references/model-paths.json`의 HuggingFace URL에서 다운로드. 저장 위치:
-- `~/ComfyUI/models/diffusion_models/ernie-image.safetensors`
-- `~/ComfyUI/models/diffusion_models/ernie-image-turbo.safetensors`
-- `~/ComfyUI/models/text_encoders/ministral-3-3b.safetensors`
-- `~/ComfyUI/models/text_encoders/ernie-image-prompt-enhancer.safetensors`
-- `~/ComfyUI/models/vae/flux2-vae.safetensors`
+### 2) ComfyUI-GGUF 커스텀 노드 (GGUF 로더)
+```bash
+cd ~/ComfyUI/custom_nodes
+git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git
+~/ComfyUI/.venv/bin/python -m pip install gguf sentencepiece protobuf
+# uv 환경이면 pip 대신:
+uv pip install --python ~/ComfyUI/.venv/bin/python gguf sentencepiece protobuf
+```
 
-간편 다운로드:
+### 3) 모델 파일 (GGUF Q4_K_M 기반, **최소 ~11GB / 풀세트 ~25GB**)
+원본 safetensors 대비 디퓨전 모델 16GB → 5GB로 축소 (품질 손실 미미).
+`references/model-paths.json` 참조.
+
+**필수 (~11GB)**:
+- `~/ComfyUI/models/unet/ernie-image-turbo-Q4_K_M.gguf` (5.02 GB, unsloth)
+- `~/ComfyUI/models/text_encoders/ministral-3-3b.safetensors` (6.0 GB, Comfy-Org)
+- `~/ComfyUI/models/vae/flux2-vae.safetensors` (0.3 GB, Comfy-Org)
+
+**선택 (+ ~13GB)**:
+- `~/ComfyUI/models/unet/ernie-image-Q4_K_M.gguf` (5.02 GB) — pro·custom 모드용
+- `~/ComfyUI/models/text_encoders/ernie-image-prompt-enhancer.safetensors` (8 GB) — `--enhance true` 사용 시
+
+간편 다운로드 (최소셋):
 ```bash
 python system/skills/comfyui/scripts/comfyui_client.py --download-models
 ```
+풀세트 다운로드:
+```bash
+python system/skills/comfyui/scripts/comfyui_client.py --download-models --include-optional
+```
 
-### 3) API 포맷 워크플로우 변환 (최초 1회)
-워크플로우 JSON 3개는 ComfyUI UI 그래프 포맷이라 API 제출 불가. 변환:
+> **GGUF 끄기**: 원본 safetensors를 쓰고 싶으면 `--safetensors` 플래그 추가. `models/diffusion_models/`에 원본 파일을 직접 받아 둘 것. (model-paths.json에는 경로가 없으니 수동 다운로드 필요)
+
+### 4) API 포맷 워크플로우 변환 (최초 1회)
+워크플로우 JSON 3개는 ComfyUI UI 그래프 포맷이라 API 제출 불가. 변환 + GGUF 치환:
 ```bash
 python system/skills/comfyui/scripts/comfyui_client.py --export-api
 ```
-→ `system/skills/comfyui/api/*.json` 생성.
+→ `system/skills/comfyui/api/*.json` 생성. 런타임에 `UNETLoader → UnetLoaderGGUF` 자동 치환 (생성 시점에).
 
-UI에서 수동 변환도 가능: ComfyUI UI에서 JSON 로드 → 우상단 **Save (API Format)** → `system/skills/comfyui/api/<원본이름>_api.json`으로 저장.
+UI에서 수동 변환도 가능: ComfyUI UI에서 JSON 로드 → 우상단 **Save (API Format)** → `system/skills/comfyui/api/<원본이름>_api.json`으로 저장. 이 경우 `--safetensors` 모드로 쓰거나 수동으로 노드 타입을 바꿀 것.
 
-### 4) ComfyUI 서버 기동
+### 5) ComfyUI 서버 기동
 ```bash
 cd ~/ComfyUI && .venv/bin/python main.py --listen 127.0.0.1 --port 8188
 ```
@@ -138,7 +158,8 @@ python "system/skills/comfyui/scripts/comfyui_client.py" \
 | 증상 | 원인·해결 |
 |------|----------|
 | `Connection refused` / 헬스체크 실패 | 서버 미기동. `cd ~/ComfyUI && .venv/bin/python main.py` |
-| `model not found: ernie-image*.safetensors` | 모델 파일 누락. `--download-models` 실행 |
+| `model not found: ernie-image*.gguf` | GGUF 모델 누락. `--download-models` 실행 |
+| `Unknown node type: UnetLoaderGGUF` | ComfyUI-GGUF 커스텀 노드 미설치. `사전 준비 2)` 참조 |
 | API 포맷 워크플로우 없음 | `--export-api` 실행 또는 UI에서 수동 Save (API Format) |
 | 프롬프트 인헨서 중국어 출력 | 정상(Ernie는 중국 모델). 그대로 사용 가능 |
 | MPS 메모리 부족 | `--width 512 --height 768`로 내리거나 `--count 1` |

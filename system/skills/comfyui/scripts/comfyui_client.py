@@ -49,6 +49,13 @@ WIDGET_INPUTS: dict[str, list[str]] = {
     "VAELoader": ["vae_name"],
     "CLIPLoader": ["clip_name", "type", "device"],
     "DualCLIPLoader": ["clip_name1", "clip_name2", "type", "device"],
+    # city96/ComfyUI-GGUF 커스텀 노드 (GGUF 양자화 로더)
+    "UnetLoaderGGUF": ["unet_name"],
+    "UnetLoaderGGUFAdvanced": ["unet_name", "dequant_dtype", "patch_dtype", "patch_on_device"],
+    "CLIPLoaderGGUF": ["clip_name", "type"],
+    "DualCLIPLoaderGGUF": ["clip_name1", "clip_name2", "type"],
+    "TripleCLIPLoaderGGUF": ["clip_name1", "clip_name2", "clip_name3"],
+    "QuadrupleCLIPLoaderGGUF": ["clip_name1", "clip_name2", "clip_name3", "clip_name4"],
     "CheckpointLoaderSimple": ["ckpt_name"],
     "ModelSamplingSD3": ["shift"],
     "CLIPTextEncode": ["text"],
@@ -214,29 +221,63 @@ def cmd_download_models(args) -> int:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "huggingface_hub"])
         from huggingface_hub import hf_hub_download  # type: ignore
 
-    repo = cfg["hf_repo"]
     models_dir = COMFYUI_ROOT / "models"
     models_dir.mkdir(exist_ok=True, parents=True)
 
-    for spec in cfg["files"]:
-        rel_path = spec["local_path"].replace("models/", "", 1)
-        local_path = models_dir / rel_path
+    # 필수 파일과 선택 파일 구분
+    required_files = [s for s in cfg["files"] if s.get("required", True)]
+    optional_files = [s for s in cfg["files"] if not s.get("required", True)]
+
+    specs = required_files[:]
+    if getattr(args, "include_optional", False):
+        specs += optional_files
+        print(f"[info] Including optional files ({len(optional_files)}개): "
+              f"{', '.join(Path(s['local_path']).name for s in optional_files)}")
+    else:
+        if optional_files:
+            names = ", ".join(Path(s["local_path"]).name for s in optional_files)
+            eprint(f"[info] Skipping optional files: {names}")
+            eprint(f"       Add --include-optional to download them too.")
+            eprint()
+
+    total_gb = sum(s.get("approximate_size_gb", 0) for s in specs)
+    print(f"[plan] {len(specs)}개 파일, 약 {total_gb:.1f} GB\n")
+
+    for spec in specs:
+        repo = spec.get("hf_repo")
+        if not repo:
+            eprint(f"[skip] {spec['local_path']}: no hf_repo specified")
+            continue
+
+        local_path = COMFYUI_ROOT / spec["local_path"]
         local_path.parent.mkdir(exist_ok=True, parents=True)
 
         if local_path.exists():
-            size_mb = local_path.stat().st_size / (1024 * 1024)
-            print(f"[skip] {rel_path} ({size_mb:.0f} MB)")
+            size_gb = local_path.stat().st_size / (1024 ** 3)
+            print(f"[skip] {spec['local_path']} ({size_gb:.2f} GB, already present)")
             continue
 
         approx = spec.get("approximate_size_gb", "?")
-        print(f"[download] {spec['hf_path']} → {rel_path} (~{approx} GB)")
+        print(f"[download] {repo}/{spec['hf_path']} → {spec['local_path']} (~{approx} GB)")
+        # hf_hub_download은 repo 구조를 그대로 local_dir 밑에 복제하므로
+        # 우리 원하는 위치로 가려면 download 후 이동 or local_dir를 섬세하게 설정.
+        # 간단히: local_dir을 local_path의 부모로 하고 filename을 basename으로.
+        # 하지만 hf_path 자체가 subfolder 포함이라 repo 구조 유지 후 이동이 단순.
         downloaded = hf_hub_download(
             repo_id=repo,
             filename=spec["hf_path"],
             local_dir=str(models_dir),
         )
-        print(f"  saved: {downloaded}")
-    print("\nAll models ready.")
+        # 요청 위치가 실제 다운로드 위치와 다르면 이동
+        actual = Path(downloaded)
+        if actual != local_path:
+            local_path.parent.mkdir(exist_ok=True, parents=True)
+            actual.replace(local_path)
+            print(f"  moved: {actual.name} → {local_path}")
+        else:
+            print(f"  saved: {downloaded}")
+
+    print("\n[ok] Download complete.")
     return 0
 
 
@@ -255,6 +296,13 @@ def cmd_check_setup(args) -> int:
     print(f"Server         : {SERVER_URL} — {'UP' if server_health() else 'DOWN'}")
 
     print()
+    print("Custom nodes:")
+    ggufnodes = COMFYUI_ROOT / "custom_nodes" / "ComfyUI-GGUF"
+    print(f"  ComfyUI-GGUF: {'OK' if ggufnodes.exists() else 'MISSING'}  ({ggufnodes})")
+    if not ggufnodes.exists():
+        ok = False
+
+    print()
     print("Models:")
     paths_file = REFERENCES_DIR / "model-paths.json"
     if paths_file.exists():
@@ -262,10 +310,15 @@ def cmd_check_setup(args) -> int:
             cfg = json.load(f)
         for spec in cfg["files"]:
             p = COMFYUI_ROOT / spec["local_path"]
-            status = f"OK ({p.stat().st_size/(1024**3):.1f} GB)" if p.exists() else "MISSING"
-            print(f"  {spec['local_path']:<60} {status}")
-            if not p.exists():
-                ok = False
+            required = spec.get("required", True)
+            tag = "[req]" if required else "[opt]"
+            if p.exists():
+                status = f"OK ({p.stat().st_size/(1024**3):.2f} GB)"
+            else:
+                status = "MISSING"
+                if required:
+                    ok = False
+            print(f"  {tag} {spec['local_path']:<55} {status}")
 
     print()
     print("API workflows:")
@@ -300,15 +353,18 @@ def find_node_by_title(api_wf: dict, title_substr: str, class_type: str | None =
 def normalize_model_paths(api_wf: dict) -> None:
     """튜토리얼 워크플로우는 'Ernie Image\\\\*.safetensors' 같은 서브폴더·백슬래시 경로를 쓴다.
 
-    ComfyUI의 표준 flat 구조(~/ComfyUI/models/diffusion_models/<file>)에 맞춰
-    백슬래시를 forward slash로 바꾸고 'Ernie Image/'·'Flux2/' 접두사는 스트립.
-    (모델을 서브폴더에 두고 싶으면 이 함수 호출을 빼면 됨.)
+    ComfyUI의 표준 flat 구조에 맞춰 백슬래시 → forward slash 치환,
+    'Ernie Image/'·'Flux2/' 접두사 스트립.
     """
     rules = {
         "UNETLoader": ["unet_name"],
+        "UnetLoaderGGUF": ["unet_name"],
+        "UnetLoaderGGUFAdvanced": ["unet_name"],
         "VAELoader": ["vae_name"],
         "CLIPLoader": ["clip_name"],
+        "CLIPLoaderGGUF": ["clip_name"],
         "DualCLIPLoader": ["clip_name1", "clip_name2"],
+        "DualCLIPLoaderGGUF": ["clip_name1", "clip_name2"],
         "CheckpointLoaderSimple": ["ckpt_name"],
     }
     prefixes = ("Ernie Image/", "Flux2/")
@@ -328,9 +384,49 @@ def normalize_model_paths(api_wf: dict) -> None:
             node["inputs"][inp_name] = v
 
 
+# UNETLoader safetensors 파일 → GGUF 파일 매핑 (model-paths.json과 동기)
+GGUF_SUBSTITUTIONS: dict[str, str] = {
+    "ernie-image-turbo.safetensors": "ernie-image-turbo-Q4_K_M.gguf",
+    "ernie-image.safetensors": "ernie-image-Q4_K_M.gguf",
+}
+
+
+def swap_unet_to_gguf(api_wf: dict) -> int:
+    """모든 UNETLoader 노드를 UnetLoaderGGUF로 치환하고 파일명을 GGUF로 변경.
+
+    ComfyUI-GGUF (city96) 노드를 요구. 모델은 ~/ComfyUI/models/unet/ 에 위치.
+    반환: 치환된 노드 수.
+    """
+    swapped = 0
+    for node in api_wf.values():
+        if node.get("class_type") != "UNETLoader":
+            continue
+        unet_name = node["inputs"].get("unet_name", "")
+        gguf_name = GGUF_SUBSTITUTIONS.get(unet_name)
+        if not gguf_name:
+            # 매핑 없으면 확장자만 바꾸는 휴리스틱
+            if unet_name.endswith(".safetensors"):
+                gguf_name = unet_name[:-len(".safetensors")] + "-Q4_K_M.gguf"
+            else:
+                continue
+        node["class_type"] = "UnetLoaderGGUF"
+        node["inputs"] = {"unet_name": gguf_name}
+        (node.setdefault("_meta", {}))["title"] = node["_meta"].get("title") or "UNETLoader (GGUF)"
+        swapped += 1
+    return swapped
+
+
 def mutate_workflow(api_wf: dict, args) -> tuple[dict, int]:
-    """프롬프트·시드·해상도·인헨서 값을 API 워크플로우에 주입."""
+    """프롬프트·시드·해상도·인헨서 값을 API 워크플로우에 주입.
+
+    기본: UNETLoader → UnetLoaderGGUF 치환(GGUF 파일 사용).
+    `--safetensors` 플래그로 끌 수 있음(원본 FP16 safetensors 사용).
+    """
     normalize_model_paths(api_wf)
+    if getattr(args, "use_gguf", True):
+        n = swap_unet_to_gguf(api_wf)
+        if n == 0:
+            eprint("[warn] GGUF mode requested but no UNETLoader found to swap")
 
     prompt_id = find_node_by_class(api_wf, "PrimitiveStringMultiline")
     width_id = find_node_by_title(api_wf, "Width", "PrimitiveInt")
@@ -503,6 +599,10 @@ def main() -> int:
     p.add_argument("--enhance", type=lambda v: str(v).lower() in {"true", "1", "yes"}, default=True)
     p.add_argument("--out", type=str, default="./comfyui-out")
     p.add_argument("--timeout", type=float, default=600)
+    p.add_argument("--include-optional", action="store_true",
+                   help="--download-models 시 optional(Base·PE) 파일도 포함")
+    p.add_argument("--safetensors", dest="use_gguf", action="store_false", default=True,
+                   help="GGUF 대신 원본 safetensors UNETLoader 사용 (모델 파일 필요)")
 
     args = p.parse_args()
 

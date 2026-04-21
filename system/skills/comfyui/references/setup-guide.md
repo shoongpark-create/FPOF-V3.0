@@ -1,4 +1,4 @@
-# ComfyUI + ERNIE-Image 설치 가이드
+# ComfyUI + ERNIE-Image (GGUF) 설치 가이드
 
 최초 1회 진행. 이미 완료했다면 스킵.
 
@@ -8,43 +8,67 @@
 git clone --depth 1 https://github.com/comfyanonymous/ComfyUI.git ~/ComfyUI
 cd ~/ComfyUI
 uv venv --python 3.12 .venv
-.venv/bin/python -m pip install --upgrade pip
-.venv/bin/python -m pip install -r requirements.txt
+uv pip install --python .venv/bin/python -r requirements.txt
 
 # PyTorch — macOS(MPS) 기준
-.venv/bin/python -m pip install torch torchvision torchaudio
+uv pip install --python .venv/bin/python torch torchvision torchaudio
 ```
 
-## 2. (권장) ComfyUI-Manager 설치
-커스텀 노드 자동 설치용. Ernie 워크플로우에 필요한 노드가 기본 포함인지 확실치 않으면 설치해두는 게 안전.
+## 2. ComfyUI-GGUF 커스텀 노드 설치 (필수)
+
+GGUF 양자화 모델 로더. `UnetLoaderGGUF`·`CLIPLoaderGGUF` 노드 제공.
+```bash
+cd ~/ComfyUI/custom_nodes
+git clone --depth 1 https://github.com/city96/ComfyUI-GGUF.git
+uv pip install --python ~/ComfyUI/.venv/bin/python gguf sentencepiece protobuf
+```
+
+## 3. (선택) ComfyUI-Manager
+커스텀 노드 자동 설치 UI. 이 스킬에선 필수 아님.
 ```bash
 cd ~/ComfyUI/custom_nodes
 git clone --depth 1 https://github.com/ltdrdata/ComfyUI-Manager.git
 ```
 
-## 3. ERNIE-Image 모델 다운로드 (~47GB)
+## 4. 모델 다운로드 (GGUF Q4_K_M, 최소 ~11GB)
 
-### 옵션 A — 자동 (hf_hub_download)
+### 옵션 A — 자동 (권장)
+최소셋 (turbo 모드만):
 ```bash
 python system/skills/comfyui/scripts/comfyui_client.py --download-models
 ```
-스크립트가 `references/model-paths.json` 참조해 5개 파일을 `~/ComfyUI/models/` 하위 경로에 배치.
+풀세트 (pro·custom + 프롬프트 인헨서):
+```bash
+python system/skills/comfyui/scripts/comfyui_client.py --download-models --include-optional
+```
+
+스크립트가 `references/model-paths.json` 참조해:
+- `unsloth/ERNIE-Image-Turbo-GGUF` → `~/ComfyUI/models/unet/ernie-image-turbo-Q4_K_M.gguf`
+- `Comfy-Org/ERNIE-Image` → `~/ComfyUI/models/text_encoders/` + `vae/`
 
 ### 옵션 B — 수동 (HuggingFace CLI)
 ```bash
-pip install -U "huggingface_hub[cli]"
+uv pip install --python ~/ComfyUI/.venv/bin/python "huggingface_hub[cli]"
 cd ~/ComfyUI/models
 
+# GGUF 디퓨전 모델 (필수 turbo / 선택 base)
+huggingface-cli download unsloth/ERNIE-Image-Turbo-GGUF \
+  ernie-image-turbo-Q4_K_M.gguf --local-dir ./unet
+huggingface-cli download unsloth/ERNIE-Image-GGUF \
+  ernie-image-Q4_K_M.gguf --local-dir ./unet   # optional
+
+# 텍스트 인코더·VAE (safetensors)
 huggingface-cli download Comfy-Org/ERNIE-Image \
-  diffusion_models/ernie-image.safetensors \
-  diffusion_models/ernie-image-turbo.safetensors \
   text_encoders/ministral-3-3b.safetensors \
-  text_encoders/ernie-image-prompt-enhancer.safetensors \
   vae/flux2-vae.safetensors \
-  --local-dir . --local-dir-use-symlinks False
+  --local-dir .
+# 인헨서 쓸 때만 추가 다운로드
+huggingface-cli download Comfy-Org/ERNIE-Image \
+  text_encoders/ernie-image-prompt-enhancer.safetensors \
+  --local-dir .
 ```
 
-## 4. 서버 실행
+## 5. 서버 실행
 
 ```bash
 cd ~/ComfyUI && .venv/bin/python main.py --listen 127.0.0.1 --port 8188
@@ -60,7 +84,7 @@ echo $! > ~/.comfyui.pid
 ```
 중지: `kill $(cat ~/.comfyui.pid)`
 
-## 5. API 포맷 워크플로우 생성
+## 6. API 포맷 워크플로우 생성
 
 워크플로우 3개 모두 UI 포맷이라 `/prompt` 엔드포인트에서 거부된다. 변환 방법:
 
@@ -77,7 +101,7 @@ python system/skills/comfyui/scripts/comfyui_client.py --export-api
 4. 파일명을 원래 이름 + `_api.json`으로 저장
 5. 3개 파일 모두 `system/skills/comfyui/api/` 폴더에 이동
 
-## 6. 스모크 테스트
+## 7. 스모크 테스트
 
 ```bash
 python system/skills/comfyui/scripts/comfyui_client.py \
@@ -94,7 +118,9 @@ python system/skills/comfyui/scripts/comfyui_client.py \
 
 ## 트러블슈팅
 
-- **MPS/Metal 에러**: PyTorch 2.3+ 필요. `pip install -U torch torchvision torchaudio`.
-- **`ERROR: Missing node type 'EmptyFlux2LatentImage'`**: ComfyUI 최신 아닐 때. `cd ~/ComfyUI && git pull`.
+- **MPS/Metal 에러**: PyTorch 2.3+ 필요. `uv pip install --python ~/ComfyUI/.venv/bin/python -U torch torchvision torchaudio`.
+- **`Unknown node type 'UnetLoaderGGUF'`**: ComfyUI-GGUF 커스텀 노드 미설치. Step 2 수행.
+- **`Unknown node type 'EmptyFlux2LatentImage'`**: ComfyUI 구버전. `cd ~/ComfyUI && git pull`.
 - **디스크 부족**: 과거 모델 잔존 가능. `du -sh ~/ComfyUI/models/*` 로 확인 후 불필요한 파일 삭제.
-- **메모리 부족 (64GB 이하)**: 해상도 내리기(960→512) 또는 `--lowvram` 플래그 추가.
+- **메모리 부족 (64GB 이하)**: 해상도 내리기(960→512) 또는 `--lowvram` 플래그 추가. Q4_K_M GGUF는 대략 VRAM 7GB 전후 요구.
+- **GGUF 품질이 기대 이하**: Q4_K_M → Q5_K_M 또는 Q6_K로 교체. `references/model-paths.json`의 파일명만 바꾸면 됨.
