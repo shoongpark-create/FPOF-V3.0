@@ -98,15 +98,6 @@
         "workspace/26SS/season-strategy/trusted-comfort/do_trusted-comfort-landing.html"
       ],
       "notes": "2026-03-21: TRUSTED COMFORT 프로젝트 분리. 소재 벤치마크(10개 브랜드)·밸류프로포지션(JTBD)·경쟁배틀카드(10개 브랜드)·전환전략서·대표보고용요약서·HTML프레젠테이션(18슬라이드) 완성. MVP 12STY(맨투맨+후드티×UNI/W×3색), 26FW 7월 런칭 목표"
-    },
-    "comfyui-upgrade": {
-      "type": "infra",
-      "pdca_phase": "check",
-      "description": "comfyui-engine 스킬 v2 전환 — Phase 1 퀵윈 + Phase 2-Slim + v2.1 품질 리팩토링 완료",
-      "artifacts": [
-        "workspace/26SS/comfyui-upgrade/plan_comfyui-engine-v2_2026-04-08.md"
-      ],
-      "notes": "2026-04-08: 설계서 v1·Phase 1 완료. 2026-04-09: Phase 2-Slim 완료(RealVisXL V5 + Lightning LoRA + 4xUltraSharp). 2026-04-10: v2.1 품질 리팩토링 완료 — NotebookLM 리서치(노트북 29f6a4a2, 180소스) 기반. Foundation Formula 7슬롯(compose_foundation_formula), Material Intelligence 사전(25소재), Style Lock(--style-lock), BUG 벤치마크 Iterate(--iterate/--revise), ControlNet v2 워크플로우 3종(canny/depth/softedge, structure_control 섹션), 빌트인 style_lock_presets 3종. 25/25 smoke 테스트 통과. 남은 항목: 브랜드 LoRA 학습, IP 캐릭터 LoRA, Living Tech Pack 통합(별도 Phase 3)."
     }
   },
   "operational": {
@@ -200,7 +191,7 @@
     "decisions_log": [
       "2026-03-09: PM-Skills 통합 방침 — 중복 영역은 기존 스킬에 '(PM-Skills 통합)' 섹션으로 보강, 비중복 영역은 FPOF 포맷으로 커스터마이징하여 신규 설치",
       "2026-03-12: 산출물 이중 트래킹 구조 도입 — pdca(시즌 전략 마일스톤) + operational(일상 운영) + projects(개별 프로젝트 자체 PDCA)",
-      "2026-04-10: Claude Code 성능 최적화 Phase 1 적용 — A1~A5. SKILL.md 4종 압축(comfyui-engine/md-to-image/executive-summary/interview-analyzer, 디테일은 body로 이관), CLAUDE.md에 Evidence before Assertions(#7·#8) + 5대 CRITICAL 원칙 3중 반복 추가, work_memory.context_budget 신설. 영상 '클로드코드 50만 줄로부터 7가지 레슨' + 71개 소스 deep research 기반. 플레이북: workspace/26SS/system-review/review_claude-code-playbook_2026-04-10.md"
+      "2026-04-10: Claude Code 성능 최적화 Phase 1 적용 — A1~A5. SKILL.md 압축, CLAUDE.md에 Evidence before Assertions(#7·#8) + 5대 CRITICAL 원칙 3중 반복 추가, work_memory.context_budget 신설. 플레이북: workspace/26SS/system-review/review_claude-code-playbook_2026-04-10.md"
     ]
   },
   "history": []
