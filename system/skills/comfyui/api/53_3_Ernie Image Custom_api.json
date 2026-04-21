@@ -20,7 +20,7 @@
   "118": {
     "inputs": {
       "source": [
-        123,
+        "123",
         0
       ]
     },
@@ -32,7 +32,7 @@
   "119": {
     "inputs": {
       "source": [
-        124,
+        "124",
         0
       ]
     },
@@ -43,10 +43,10 @@
   },
   "112": {
     "inputs": {
-      "text": "[SYSTEM_PROMPT]You are a professional text-based image enhancement assistant. You will receive a brief image description and target generation resolution from the user. Please expand this description into a rich and detailed visual description to help the text-based image model generate high-quality images. **The enhanced description MUST be written in English, regardless of the input language (Korean, Chinese, Japanese, etc. will be translated to English in your output).** Output only the enhanced English description; do not include any explanations, translations, prefixes, or the original text.[/SYSTEM_PROMPT][INST]{\"prompt\": \"{prompt}\", \"width\": {width}, \"height\": {height}}[/INST]",
-      "pattern": "{prompt}",
+      "string": "[SYSTEM_PROMPT]You are a professional text-based image enhancement assistant. You will receive a brief image description and target generation resolution from the user. Please expand this description into a rich and detailed visual description to help the text-based image model generate high-quality images. **The enhanced description MUST be written in English, regardless of the input language (Korean, Chinese, Japanese, etc. will be translated to English in your output).** Output only the enhanced English description; do not include any explanations, translations, prefixes, or the original text.[/SYSTEM_PROMPT][INST]{\"prompt\": \"{prompt}\", \"width\": {width}, \"height\": {height}}[/INST]",
+      "find": "{prompt}",
       "replace": [
-        113,
+        "113",
         0
       ]
     },
@@ -57,14 +57,13 @@
   },
   "120": {
     "inputs": {
-      "text": "",
-      "pattern": "{width}",
-      "replace": [
-        118,
+      "string": [
+        "112",
         0
       ],
-      "string": [
-        112,
+      "find": "{width}",
+      "replace": [
+        "118",
         0
       ]
     },
@@ -75,14 +74,13 @@
   },
   "121": {
     "inputs": {
-      "text": "",
-      "pattern": "{height}",
-      "replace": [
-        119,
+      "string": [
+        "120",
         0
       ],
-      "string": [
-        120,
+      "find": "{height}",
+      "replace": [
+        "119",
         0
       ]
     },
@@ -94,15 +92,15 @@
   "116": {
     "inputs": {
       "switch": [
-        115,
+        "115",
         0
       ],
       "on_false": [
-        113,
+        "113",
         0
       ],
       "on_true": [
-        114,
+        "114",
         0
       ]
     },
@@ -125,7 +123,7 @@
   "122": {
     "inputs": {
       "source": [
-        116,
+        "116",
         0
       ]
     },
@@ -137,21 +135,21 @@
   "114": {
     "inputs": {
       "prompt": [
-        121,
+        "121",
         0
       ],
-      "max_new_tokens": 2048,
-      "do_sample": "on",
+      "max_length": 2048,
+      "sampling_mode": "on",
       "temperature": 0.6,
       "top_k": 64,
       "top_p": 0.8,
       "min_p": 0.05,
       "repetition_penalty": 1.05,
       "seed": 0,
-      "skip_special_tokens": false,
-      "stream": true,
+      "thinking": false,
+      "use_default_template": true,
       "clip": [
-        117,
+        "117",
         0
       ]
     },
@@ -163,11 +161,11 @@
   "106": {
     "inputs": {
       "samples": [
-        130,
+        "130",
         0
       ],
       "vae": [
-        110,
+        "110",
         0
       ]
     },
@@ -219,11 +217,11 @@
   "108": {
     "inputs": {
       "text": [
-        116,
+        "116",
         0
       ],
       "clip": [
-        109,
+        "109",
         0
       ]
     },
@@ -236,7 +234,7 @@
     "inputs": {
       "filename_prefix": "Ernie/ComfyUI",
       "images": [
-        106,
+        "106",
         0
       ]
     },
@@ -249,7 +247,7 @@
     "inputs": {
       "add_noise": "enable",
       "noise_seed": [
-        133,
+        "133",
         0
       ],
       "steps": 20,
@@ -260,19 +258,19 @@
       "end_at_step": 20,
       "return_with_leftover_noise": "disable",
       "model": [
-        131,
+        "131",
         0
       ],
       "positive": [
-        108,
+        "108",
         0
       ],
       "negative": [
-        128,
+        "128",
         0
       ],
       "latent_image": [
-        129,
+        "129",
         0
       ]
     },
@@ -303,7 +301,7 @@
     "inputs": {
       "add_noise": "enable",
       "noise_seed": [
-        133,
+        "133",
         0
       ],
       "steps": 20,
@@ -314,19 +312,19 @@
       "end_at_step": 2,
       "return_with_leftover_noise": "disable",
       "model": [
-        105,
+        "105",
         0
       ],
       "positive": [
-        108,
+        "108",
         0
       ],
       "negative": [
-        128,
+        "128",
         0
       ],
       "latent_image": [
-        104,
+        "104",
         0
       ]
     },
@@ -339,7 +337,7 @@
     "inputs": {
       "text": "",
       "clip": [
-        109,
+        "109",
         0
       ]
     },
@@ -351,11 +349,11 @@
   "104": {
     "inputs": {
       "width": [
-        123,
+        "123",
         0
       ],
       "height": [
-        124,
+        "124",
         0
       ],
       "batch_size": 1

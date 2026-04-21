@@ -70,15 +70,18 @@ WIDGET_INPUTS: dict[str, list[str]] = {
     "PreviewAny": [],
     "CLIPSetLastLayer": ["stop_at_clip_layer"],
     "LoraLoader": ["lora_name", "strength_model", "strength_clip"],
-    "StringReplace": ["text", "pattern", "replace"],
-    # ComfyUI-Easy-Use 스위치: switch 입력은 대부분 링크로 연결되므로 위젯 디폴트는 무시됨
+    # ComfyUI StringReplace 실제 schema: ["string", "find", "replace"]
+    "StringReplace": ["string", "find", "replace"],
     "ComfySwitchNode": ["switch"],
-    # TextGenerate (프롬프트 인헨서) 위젯 — prompt는 링크 연결이라 위젯값 덮어쓰지 않음.
-    # 나머지 위젯 이름은 추정값이므로 --enhance 시 에러 나면 ComfyUI UI에서 API 포맷으로 저장할 것.
+    # TextGenerate (프롬프트 인헨서) — 실측 schema 기반:
+    # required: clip(link), prompt(link), max_length, sampling_mode
+    # nested under sampling_mode=on: temperature, top_k, top_p, min_p, repetition_penalty
+    # optional: thinking, use_default_template
     "TextGenerate": [
-        "prompt", "max_new_tokens", "do_sample", "temperature",
-        "top_k", "top_p", "min_p", "repetition_penalty",
-        "seed", "__skip__", "skip_special_tokens", "stream",
+        "prompt", "max_length", "sampling_mode",
+        "temperature", "top_k", "top_p", "min_p", "repetition_penalty",
+        "seed", "__skip__",   # [8]=seed, [9]=control_after_generate(UI-only)
+        "thinking", "use_default_template",
     ],
 }
 
@@ -142,11 +145,12 @@ def ui_to_api(ui: dict) -> tuple[dict, set[str]]:
 
     반환: (api_workflow, unknown_class_types)
     """
-    link_map: dict[int, list[int]] = {}
+    link_map: dict[int, list] = {}
     for link in ui.get("links") or []:
         if isinstance(link, list) and len(link) >= 5:
             link_id, src_node, src_slot = link[0], link[1], link[2]
-            link_map[link_id] = [src_node, src_slot]
+            # ComfyUI API requires string node IDs in link references (prompt dict is keyed by str).
+            link_map[link_id] = [str(src_node), src_slot]
 
     api: dict[str, dict] = {}
     unknown: set[str] = set()
@@ -416,6 +420,78 @@ def swap_unet_to_gguf(api_wf: dict) -> int:
     return swapped
 
 
+def prune_enhance_branch(api_wf: dict) -> int:
+    """enhance=false 일 때 프롬프트 인헨서 브랜치 전체 제거.
+
+    제거 대상: StringReplace, TextGenerate, ComfySwitchNode(프롬프트 분기), CLIPLoader(PE),
+    PreviewAny, PrimitiveBoolean(enhance toggle)
+    재배선: CLIPTextEncode.text 입력을 직접 PrimitiveStringMultiline(유저 프롬프트)으로 연결.
+
+    이유: TextGenerate 노드의 sampling_mode는 COMFY_DYNAMICCOMBO_V3로 nested 스키마라
+    flat 위젯 매핑으로 validation 통과가 안 됨. enhance=false면 어차피 실행 안 되므로
+    그래프에서 완전히 제거.
+    """
+    prompt_node_id = None
+    for nid, node in api_wf.items():
+        if node.get("class_type") == "PrimitiveStringMultiline":
+            prompt_node_id = nid
+            break
+    if not prompt_node_id:
+        return 0
+
+    switch_node_ids = [
+        nid for nid, n in api_wf.items() if n.get("class_type") == "ComfySwitchNode"
+    ]
+
+    # CLIPTextEncode(positive)의 text 입력이 스위치 출력이면 유저 프롬프트로 직결
+    for nid, node in api_wf.items():
+        if node.get("class_type") != "CLIPTextEncode":
+            continue
+        t = node["inputs"].get("text")
+        if isinstance(t, list) and t[0] in switch_node_ids:
+            node["inputs"]["text"] = [prompt_node_id, 0]
+
+    to_remove: set[str] = set()
+    for nid, node in api_wf.items():
+        ct = node.get("class_type")
+        if ct in ("StringReplace", "TextGenerate", "ComfySwitchNode", "PreviewAny"):
+            to_remove.add(nid)
+        elif ct == "CLIPLoader" and "prompt-enhancer" in str(node["inputs"].get("clip_name", "")):
+            to_remove.add(nid)
+        elif ct == "PrimitiveBoolean":
+            to_remove.add(nid)
+
+    for nid in to_remove:
+        del api_wf[nid]
+    return len(to_remove)
+
+
+def patch_missing_clip_files(api_wf: dict) -> None:
+    """PE encoder 파일이 없으면 CLIPLoader clip_name을 ministral로 치환.
+
+    ComfyUI는 inactive 브랜치(ComfySwitchNode on_false)도 validation 단계에서 검사하므로
+    모델 파일 존재 여부를 체크한다. PE 파일을 다운로드하지 않은 경우
+    해당 CLIPLoader가 '파일 없음' 에러를 낸다.
+
+    해결: clip_name을 실제 존재하는 파일(ministral)로 치환. 노드 자체는 enhance=false 경로에서
+    실행되지 않으므로 실제 로드는 발생하지 않는다 (validation만 통과시킴).
+    """
+    pe_path = COMFYUI_ROOT / "models" / "text_encoders" / "ernie-image-prompt-enhancer.safetensors"
+    mistral_path = COMFYUI_ROOT / "models" / "text_encoders" / "ministral-3-3b.safetensors"
+    if pe_path.exists():
+        return  # 실제 파일 있으면 그대로 사용
+    if not mistral_path.exists():
+        return  # 대체할 파일도 없으면 손 못 댐
+    for node in api_wf.values():
+        if node.get("class_type") in ("CLIPLoader", "CLIPLoaderGGUF"):
+            cname = node["inputs"].get("clip_name")
+            if isinstance(cname, str) and "prompt-enhancer" in cname:
+                node["inputs"]["clip_name"] = "ministral-3-3b.safetensors"
+                (node.setdefault("_meta", {}))["title"] = (
+                    (node.get("_meta") or {}).get("title", "") + " [PE missing — substituted]"
+                )
+
+
 def mutate_workflow(api_wf: dict, args) -> tuple[dict, int]:
     """프롬프트·시드·해상도·인헨서 값을 API 워크플로우에 주입.
 
@@ -423,6 +499,11 @@ def mutate_workflow(api_wf: dict, args) -> tuple[dict, int]:
     `--safetensors` 플래그로 끌 수 있음(원본 FP16 safetensors 사용).
     """
     normalize_model_paths(api_wf)
+    patch_missing_clip_files(api_wf)
+    if not getattr(args, "enhance", True):
+        pruned = prune_enhance_branch(api_wf)
+        if pruned:
+            eprint(f"[info] --enhance false → removed {pruned} enhance-branch node(s)")
     if getattr(args, "use_gguf", True):
         n = swap_unet_to_gguf(api_wf)
         if n == 0:
