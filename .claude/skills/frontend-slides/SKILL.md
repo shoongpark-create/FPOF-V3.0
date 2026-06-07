@@ -1,6 +1,6 @@
 ---
 name: frontend-slides
-description: Create stunning, animation-rich HTML presentations from scratch or by converting PowerPoint files. Use when the user wants to build a presentation, convert a PPT/PPTX to web, or create slides for a talk/pitch. Helps non-designers discover their aesthetic through visual exploration rather than abstract choices.
+description: Create stunning, animation-rich HTML presentations from scratch or by converting PowerPoint files. Use when the user wants to build a presentation, convert a PPT/PPTX to web, or create slides for a talk/pitch. Supports built-in style presets and project design systems from design-systems/*/DESIGN.md so users can choose a branded visual language through previews.
 ---
 
 # Frontend Slides Skill
@@ -15,6 +15,7 @@ Create zero-dependency, animation-rich HTML presentations that run entirely in t
 4. **Production Quality** — Code should be well-commented, accessible, and performant.
 5. **Viewport Fitting (CRITICAL)** — Every slide MUST fit exactly within the viewport. No scrolling within slides, ever. This is non-negotiable.
 6. **Light Mode Default** — Unless the user explicitly requests dark mode, all presentations MUST use a light background (white/off-white) color scheme. Light mode is the default for readability, projector compatibility, and professional presentation contexts.
+7. **Design-System Aware** — When a project `design-systems/` folder exists, use it as the preferred style library. Read only the selected `DESIGN.md`, then translate its tokens and component rules into slide-safe CSS.
 
 ---
 
@@ -252,21 +253,69 @@ First, determine what the user wants:
 
 **Mode A: New Presentation**
 - User wants to create slides from scratch
-- Proceed to Phase 1 (Content Discovery)
+- Proceed to Phase 0.5 (Mandatory Design-System Picker), then Phase 1 (Content Discovery)
 
 **Mode B: PPT Conversion**
 - User has a PowerPoint file (.ppt, .pptx) to convert
-- Proceed to Phase 4 (PPT Extraction)
+- Proceed to Phase 0.5 (Mandatory Design-System Picker), then Phase 4 (PPT Extraction)
 
 **Mode C: Existing Presentation Enhancement**
 - User has an HTML presentation and wants to improve it
-- Read the existing file, understand the structure, then enhance
+- Read the existing file, understand the structure, then use Phase 0.5 if visual style is not already explicit
+
+---
+
+## Phase 0.5: Mandatory Design-System Picker
+
+When this skill is invoked for a new presentation or PPT conversion, choose the visual design system **before** generating outlines, previews, or final files.
+
+Use AskUserQuestion whenever available. If the environment does not expose AskUserQuestion, ask the same picker question as a concise normal message and wait for the user before proceeding.
+
+Skip this gate only when the user has already specified an exact design-system slug, exact built-in preset, or explicitly says to choose automatically without asking.
+
+### Default Behavior
+
+If a project `design-systems/` directory exists, the first picker MUST contain actual design-system slugs from that folder, not a generic "Design systems vs presets" choice.
+
+Before asking:
+
+1. Run `scripts/list_design_systems.py` from the project root.
+2. Curate 3-4 options based on the user request, topic, audience, and content type.
+3. Include the exact slug in each option label, e.g. `claude`, `warm-editorial`, `vercel`.
+4. Include one "Auto-pick" option only if the user has not already asked for a specific style.
+
+### Question: Pick a Design System
+
+- Header: "Design"
+- Question: "Which design system should this presentation use?"
+- Options:
+  - "`<slug>`" — One sentence explaining why this system fits the deck
+  - "`<slug>`" — One sentence explaining why this system fits the deck
+  - "`<slug>`" — One sentence explaining why this system fits the deck
+  - "Auto-pick" — Let Codex choose the best design system from `design-systems/`
+
+### Follow-up Behavior
+
+**If the user selects a slug:**
+- Read only `design-systems/<slug>/DESIGN.md`.
+- Continue with content discovery and generation using that design system.
+
+**If "Auto-pick":**
+- Choose one design-system slug when `design-systems/` exists; otherwise choose one built-in preset.
+- State the selected style in one sentence before continuing.
+
+**If no `design-systems/` directory exists:**
+- Fall back to built-in presets.
+- AskUserQuestion with 3-4 suitable built-in presets based on the user's topic and audience.
+- Include one safe education/workshop option by default, usually `Notebook Tabs`, `Paper & Ink`, or `Swiss Modern`.
+
+After this gate completes, continue to Phase 1 for new presentations or Phase 4 for PPT conversion.
 
 ---
 
 ## Phase 1: Content Discovery (New Presentations)
 
-Before designing, understand the content. Ask via AskUserQuestion:
+After Phase 0.5 has established the visual style source, understand the content. Ask via AskUserQuestion:
 
 ### Step 1.1: Presentation Context
 
@@ -305,9 +354,9 @@ If user has content, ask them to share it (text, bullet points, images, etc.).
 
 Most people can't articulate design preferences in words. Instead of asking "do you want minimalist or bold?", we generate mini-previews and let them react.
 
-### How Users Choose Presets
+### How Users Choose Styles
 
-Users can select a style in **two ways**:
+Users can select a style in **three ways**:
 
 **Option A: Guided Discovery (Default)**
 - User answers mood questions
@@ -319,6 +368,12 @@ Users can select a style in **two ways**:
 - If user already knows what they want, they can request a preset by name
 - Example: "Use the Bold Signal style" or "I want something like Dark Botanical"
 - Skip to Phase 3 immediately
+
+**Option C: Project Design System**
+- If the project has `design-systems/*/DESIGN.md`, prefer those systems over built-in presets.
+- User can request a slug directly, e.g. "Use apple", "Use warm-editorial", "Use vercel".
+- If user asks to choose from available design systems, run `scripts/list_design_systems.py` and present 6-10 relevant options grouped by category.
+- Read only the selected `DESIGN.md` before generating previews or the final deck.
 
 **Available Presets:**
 | Preset | Vibe | Best For |
@@ -336,18 +391,45 @@ Users can select a style in **two ways**:
 | Swiss Modern | Minimal, precise | Corporate, data |
 | Paper & Ink | Literary, thoughtful | Storytelling |
 
+### Project Design Systems
+
+When available, project design systems live at:
+
+```
+design-systems/<slug>/DESIGN.md
+```
+
+Use the bundled helper to inspect them without loading every file:
+
+```bash
+python3 .claude/skills/frontend-slides/scripts/list_design_systems.py
+python3 .claude/skills/frontend-slides/scripts/list_design_systems.py --query "ai developer editorial"
+python3 .claude/skills/frontend-slides/scripts/list_design_systems.py --slug warm-editorial
+```
+
+Selection rules:
+- If the user names a slug, read that exact `DESIGN.md`.
+- If the user names a brand/category, use the helper with `--query` and propose matching slugs.
+- If the user gives no style direction, propose 3 candidates from design systems first, then fall back to built-in presets.
+- Never paste the whole design-system catalog into the response. Show a short curated list.
+- Brand-inspired systems are aesthetic references, not official brand assets. Do not claim affiliation or official endorsement.
+- For more detail on adapting `DESIGN.md` to slides, see `references/design-systems.md`.
+
 ### Step 2.0: Style Path Selection
 
-First, ask how the user wants to choose their style:
+If Phase 0.5 did not run because this is an enhancement task or imported legacy workflow, ask how the user wants to choose their style. Otherwise, reuse the Phase 0.5 choice and do not ask this question again.
 
 **Question: Style Selection Method**
 - Header: "Style"
 - Question: "How would you like to choose your presentation style?"
 - Options:
-  - "Show me options" — Generate 3 previews based on my needs (recommended for most users)
-  - "I know what I want" — Let me pick from the preset list directly
+  - "Design system options" — Generate previews from project design-systems (recommended when available)
+  - "Show me preset options" — Generate 3 previews from built-in slide presets
+  - "I know what I want" — Let me pick a preset or design-system slug directly
 
-**If "Show me options"** → Continue to Step 2.1 (Mood Selection)
+**If "Design system options" or Phase 0.5 selected "Design systems"** → Run `scripts/list_design_systems.py`, choose 3 candidate systems based on purpose/audience, read those 3 `DESIGN.md` files only, then continue to Step 2.2.
+
+**If "Show me preset options" or no project `design-systems/` folder exists** → Continue to Step 2.1 (Mood Selection)
 
 **If "I know what I want"** → Show preset picker:
 
@@ -361,6 +443,8 @@ First, ask how the user wants to choose their style:
   - "Pastel Geometry" — Friendly pastels with decorative pills
 
 (If user picks one, skip to Phase 3. If they want to see more options, show additional presets or proceed to guided discovery.)
+
+If the user enters a design-system slug instead of a preset name, read `design-systems/<slug>/DESIGN.md` and skip to Phase 3.
 
 ### Step 2.1: Mood Selection (Guided Discovery)
 
@@ -403,6 +487,14 @@ Based on their mood selection, generate **3 distinct style previews** as mini HT
 - Cohesive color themes with personality
 - Atmospheric backgrounds (gradients, subtle patterns, depth)
 - Signature animation moments
+
+**When using project design systems:**
+- Each preview should correspond to one selected `DESIGN.md` slug.
+- Translate the system into slide-safe tokens: `--bg-primary`, `--text-primary`, `--accent`, `--surface`, `--font-display`, `--font-body`, spacing, radius, border, and depth.
+- Preserve the design system's atmosphere and component logic, but adapt it for 100vh slides.
+- If a system specifies web-page hero heights, convert them to slide sections that still obey `height: 100vh; height: 100dvh; overflow: hidden;`.
+- If a system uses negative letter spacing, reset slide CSS letter spacing to `0` unless the user's environment explicitly allows it.
+- If a system depends on brand imagery/logos/assets that are not present locally, use abstract layout, color, typography, and component rhythm instead of inventing fake official assets.
 
 ### Step 2.3: Present Previews
 
@@ -461,6 +553,19 @@ If "Mix elements", ask for specifics.
 Now generate the full presentation based on:
 - Content from Phase 1
 - Style from Phase 2
+- Selected project design system, if any. Read its `DESIGN.md` once and convert its visual theme into the CSS custom properties and component classes below.
+
+### Design-System Adaptation Rules
+
+When a `DESIGN.md` is selected:
+
+1. Extract only the relevant rules: visual theme, color palette, typography, component styling, layout, depth, responsive behavior, and do/don't guidance.
+2. Convert fixed web-page values to presentation-safe responsive values with `clamp()`.
+3. Keep every slide at exact viewport height. Design-system rules never override viewport fitting.
+4. Use the design system's own colors before inventing new colors. If contrast fails, choose the closest accessible token and note the adjustment in a code comment.
+5. Translate components into slide components: hero, section divider, callout, feature card, comparison table, timeline, code panel, quote, and checklist.
+6. Do not include official brand logos or copyrighted imagery unless the files are explicitly provided by the user.
+7. Avoid claiming that the output is an official brand deck. Use "inspired by <slug>" language only when needed.
 
 ### File Structure
 
