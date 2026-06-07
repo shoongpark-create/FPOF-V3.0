@@ -19,3 +19,8 @@ system/data/market-intel/
 
 # Codex CLI 스킬 심링크 (머신 종속 절대경로)
 .codex/
+
+# 내부 자료 — 로컬 전용, git 추적 금지 (회의록·사내 데이터·교육자료)
+docs/meeting notes/
+docs/qr process/
+docs/education/
