@@ -165,18 +165,24 @@
     },
     "dashboard": {
       "refresh_cycle": "weekly",
-      "latest_data_week": "w19",
+      "latest_data_week": "w21",
       "artifacts": [
-        "workspace/26SS/dashboard/board_sales.html",
-        "workspace/26SS/dashboard/board_product-detail.html",
-        "workspace/26SS/dashboard/board_master-review.html",
-        "workspace/26SS/dashboard/data_sales.json",
-        "workspace/26SS/dashboard/data_product-status.json",
-        "workspace/26SS/dashboard/data_per-detail.json",
-        "workspace/26SS/dashboard/data_per-styles.json",
-        "workspace/26SS/dashboard/data_cum-detail.json",
-        "workspace/26SS/dashboard/data_w10_full.json",
-        "workspace/26SS/dashboard/data_w11_full.json"
+        "workspace/26SS/dashboard - sales/board_master-review_new.html",
+        "workspace/26SS/dashboard - sales/board_season-planning_new.html",
+        "workspace/26SS/dashboard - sales/data_sales.json",
+        "workspace/26SS/dashboard - sales/data_product-status.json",
+        "workspace/26SS/dashboard - sales/data_per-detail.json",
+        "workspace/26SS/dashboard - sales/data_per-styles.json",
+        "workspace/26SS/dashboard - sales/data_cum-detail.json"
+      ],
+      "notes": "2026-06-07 경로 현행화: 구 'dashboard/' → 'dashboard - sales/', 주차 데이터 w21까지 (data_w10~w21_full.json 동일 폴더)"
+    },
+    "dashboard_weekly_monthly": {
+      "description": "sales 대시보드에서 분리 신규생성한 주간(6탭)·월간(7탭) 대시보드 — 2026-06-04",
+      "refresh_cycle": "weekly/monthly",
+      "artifacts": [
+        "workspace/26SS/dashboard - weekly/board_weekly.html",
+        "workspace/26SS/dashboard - monthly/board_monthly.html"
       ]
     },
     "dashboard_overview": {
