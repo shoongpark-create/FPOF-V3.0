@@ -1,0 +1,121 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "와키윌리 W3C Design Tokens — 모든 패션/비주얼/카피 산출물의 단일 진실 소스. visual-identity.json은 사람용 요약본, 본 파일이 기계 검증용 정본",
+  "$version": "1.0.0",
+  "$source_of_truth": true,
+  "$references": ["bcave/bta-guideline.md", "wacky-willy/visual-identity.json"],
+
+  "color": {
+    "brand": {
+      "primary": {
+        "signature-yellow": { "$value": "#FEF200", "$type": "color", "$description": "브랜드 코어 — 로고/CTA/포인트만" },
+        "black":            { "$value": "#000000", "$type": "color", "$description": "타이포·배경" },
+        "white":            { "$value": "#FFFFFF", "$type": "color", "$description": "여백·반전" }
+      },
+      "secondary": {
+        "sky-blue": { "$value": "#68A8DB", "$type": "color", "$description": "시즌 악센트 — 전체 비주얼의 20% 이내" }
+      },
+      "editorial-report": {
+        "$description": "Swiss Editorial 보조 팔레트 — 내부 보고/대표이사 deck/주간 리포트 한정. 외부 송출(룩북/광고/PDP/소셜) 사용 금지. quality-gate가 산출물 카테고리로 컨텍스트 분기",
+        "$context": ["internal-report", "ceo-briefing", "weekly-deck", "data-doc"],
+        "bg":        { "$value": "#F6F4EE", "$type": "color", "$description": "오프화이트 — Swiss editorial 배경" },
+        "ink":       { "$value": "#0E0F12", "$type": "color", "$description": "다크 잉크 — 본문 타이포 (#000000 변형)" },
+        "ink-muted": { "$value": "#5B5F68", "$type": "color", "$description": "보조 텍스트 그레이" },
+        "rule":      { "$value": "rgba(14,15,18,0.12)", "$type": "color", "$description": "룰러/디바이더" },
+        "hot":       { "$value": "#E8391C", "$type": "color", "$description": "급등/공격 시그널 — 데이터 인사이트 한정" },
+        "cold":      { "$value": "#1E4FD6", "$type": "color", "$description": "급락/수비 시그널 — 데이터 인사이트 한정" },
+        "neutral":   { "$value": "#8A8E98", "$type": "color", "$description": "중립/안정 시그널" },
+        "accent":    { "$value": "#FFD200", "$type": "color", "$description": "Editorial 액센트 — signature-yellow #FEF200의 보조 톤" }
+      }
+    },
+    "allowlist": {
+      "$value": ["#FEF200", "#000000", "#FFFFFF", "#68A8DB"],
+      "$type": "set",
+      "$description": "외부 송출 자산 기본 allowlist — 룩북/광고/PDP/소셜/패키징"
+    },
+    "allowlist-editorial-report": {
+      "$value": ["#F6F4EE", "#FFFFFF", "#0E0F12", "#5B5F68", "#E8391C", "#1E4FD6", "#8A8E98", "#FFD200", "#FEF200", "#68A8DB"],
+      "$type": "set",
+      "$description": "내부 보고 deck/문서 한정 확장 allowlist (editorial-report 컨텍스트). 외부 송출 시 적용 불가",
+      "$applies_when": "산출물 카테고리 ∈ {deck, doc, report, briefing} AND 채널 = internal"
+    }
+  },
+
+  "logo": {
+    "shape":           { "$value": "circle-only", "$type": "shape", "$description": "원형 유지 — 변형 금지 (CRITICAL #3)" },
+    "color-allowlist": { "$value": ["#FEF200", "#000000", "#FFFFFF"], "$type": "set" },
+    "min-size-px":     { "$value": 24, "$type": "dimension" },
+    "clear-space":     { "$value": "0.5x logo height", "$type": "spacing" },
+    "deformation":     { "$value": "prohibited", "$description": "stretch/skew/recolor outside allowlist 모두 금지" }
+  },
+
+  "typography": {
+    "display": { "$value": "Bold grotesque sans-serif", "$type": "fontFamily", "$description": "graffiti 감성 헤드라인" },
+    "body":    { "$value": "Clean sans-serif",          "$type": "fontFamily", "$description": "가독성 우선 본문" },
+    "accent":  { "$value": "Hand-drawn / doodle",       "$type": "fontFamily", "$description": "IP 콘텐츠 전용" }
+  },
+
+  "graphic-style": {
+    "ip-application":   { "$value": "Bold outline + flat color fill (doodle/graffiti)", "$type": "style" },
+    "photo-direction":  { "$value": "Street context, 자연광, 움직임 있는 포즈", "$type": "style" },
+    "layout":           { "$value": ["asymmetric", "bold-crop", "text-overlay-ok", "white-space-minimal"], "$type": "set" },
+    "design-keywords":  { "$value": ["Doodle", "Graffiti", "Pop Art", "Bold Lines", "Vivid Colors"], "$type": "set" }
+  },
+
+  "bta": {
+    "$description": "Basic/Trend/Accent 비율 — 모든 상품·원가·물량 기획에 명시 필수 (CRITICAL #1)",
+    "ratio": {
+      "basic":  { "$value": { "min": 0.40, "max": 0.50 }, "$type": "ratio", "$description": "신뢰 기반 재구매" },
+      "trend":  { "$value": { "min": 0.30, "max": 0.40 }, "$type": "ratio", "$description": "욕구 기반 구매" },
+      "accent": { "$value": { "min": 0.15, "max": 0.25 }, "$type": "ratio", "$description": "화제성 확산" }
+    },
+    "pricing-band-krw": {
+      "basic":  { "$value": { "min": 20000, "max": 30000 }, "$type": "currency" },
+      "trend":  { "$value": { "min": 30000, "max": 50000 }, "$type": "currency" },
+      "accent": { "$value": { "min": 50000, "max": 80000 }, "$type": "currency" }
+    },
+    "cost-rate": {
+      "basic":  { "$value": { "min": 0.27, "max": 0.30 }, "$type": "ratio" },
+      "trend":  { "$value": { "min": 0.30, "max": 0.33 }, "$type": "ratio" },
+      "accent": { "$value": { "min": 0.33, "max": 0.38 }, "$type": "ratio" }
+    }
+  },
+
+  "rules": {
+    "3b-prohibition": {
+      "$value": ["basic-item", "basic-color", "basic-coordination"],
+      "$type": "set",
+      "$description": "3B 착장 금지 (CRITICAL #2) — 비주얼/룩북/광고 전 채널",
+      "enforcement": "block"
+    },
+    "logo-deformation": {
+      "$value": "prohibited",
+      "$description": "CRITICAL #3",
+      "enforcement": "block"
+    },
+    "preset-fabrication": {
+      "$value": "prohibited",
+      "$description": "프리셋 외 브랜드 정보 생성 금지 (CRITICAL #4)",
+      "enforcement": "block"
+    },
+    "evidence-required": {
+      "$value": "required",
+      "$description": "산출물 보고 전 Read 재확인 필수 (CRITICAL #5)",
+      "enforcement": "warn"
+    }
+  },
+
+  "signature-items": {
+    "$value": ["키치 그래픽 티셔츠", "릴리 포인트 크롭 가디건", "플라이트 백팩"],
+    "$type": "set"
+  },
+
+  "consumers": {
+    "$description": "이 토큰을 참조해야 하는 스킬·에이전트",
+    "$value": [
+      "color-intelligence", "design-generator", "visual-factory",
+      "comfyui", "marketing", "deck", "doc",
+      "quality-gate"
+    ]
+  }
+}

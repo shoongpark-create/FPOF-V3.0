@@ -1,0 +1,16 @@
+{
+  "stage": "Plan",
+  "$description": "Checklist Design 패턴 — Plan 단계 산출물(트렌드/MD기획/라인시트) 발행 전 검증",
+  "owner": "전략기획실 + 데이터 인텔리전스",
+  "items": [
+    { "id": "P-1", "critical_id": 1, "check": "BTA 비율(Basic 40~50%, Trend 30~40%, Accent 15~25%) 명시?", "must_pass": true },
+    { "id": "P-2", "critical_id": 4, "check": "타겟 페르소나가 personas.json에서 발견?", "must_pass": true },
+    { "id": "P-3", "critical_id": 4, "check": "카테고리/IP 명사가 categories.json/ip-bible.json 내?", "must_pass": true },
+    { "id": "P-4", "check": "히트상품 룰 명시 (상위 20%로 매출 50%+)?", "must_pass": true },
+    { "id": "P-5", "check": "QR 비중 60%+ 가능 구조?", "must_pass": false },
+    { "id": "P-6", "check": "MVP STY 12 이내(PMF 검증 모드)?", "must_pass": false },
+    { "id": "P-7", "critical_id": 5, "check": "산출물 파일명이 file-naming-convention.json 규칙 준수?", "must_pass": true },
+    { "id": "P-8", "check": "OKR / North Star 메트릭과 정렬?", "must_pass": false }
+  ],
+  "next_stage_blocker": ["P-1", "P-2", "P-3", "P-7"]
+}

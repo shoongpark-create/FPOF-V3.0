@@ -1,0 +1,17 @@
+{
+  "stage": "Do",
+  "$description": "Do 단계 산출물(테크팩/IMC/비주얼/카피/소셜) 발행 전 검증",
+  "owner": "프로덕트 랩 + 마케팅 쇼룸",
+  "items": [
+    { "id": "DO-1", "check": "B.A.M.P (Brand·Audience·Message·Platform) 4축 명시?", "must_pass": true },
+    { "id": "DO-2", "check": "IMC 콘텐츠가 히어로 SKU 중심으로 정렬?", "must_pass": true },
+    { "id": "DO-3", "critical_id": 2, "check": "비주얼/룩북에 3B 착장 0건?", "must_pass": true },
+    { "id": "DO-4", "critical_id": 3, "check": "전 채널 자산의 로고가 가이드 준수?", "must_pass": true },
+    { "id": "DO-5", "check": "SNS 3균형 (브랜드·상품·인사이트) 콘텐츠 분포?", "must_pass": false },
+    { "id": "DO-6", "check": "채널별 사이즈/포맷 (channels.json) 준수?", "must_pass": true },
+    { "id": "DO-7", "critical_id": 4, "check": "카피 톤매너가 tone-manner.json 부합?", "must_pass": true },
+    { "id": "DO-8", "check": "VM (보기 좋게/집기 좋게/사기 좋게) 3원칙 충족 (오프라인 자산 한정)?", "must_pass": false },
+    { "id": "DO-9", "check": "콜라보/IP 사용 시 ip-bible.json 라이선스 룰 부합?", "must_pass": true }
+  ],
+  "next_stage_blocker": ["DO-1", "DO-3", "DO-4", "DO-6", "DO-7", "DO-9"]
+}

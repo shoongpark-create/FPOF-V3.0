@@ -1,0 +1,101 @@
+{
+  "$schema": "fpof://component-library/v1",
+  "$description": "패션 Atomic Design — 디자인 시스템 컴포넌트 패턴을 패션 SKU/룩 기획에 적용. design-tokens.json 참조 강제",
+  "$version": "1.0.0",
+  "$tokens_ref": "system/presets/wacky-willy/design-tokens.json",
+
+  "atom": {
+    "$description": "최소 단위 — 자체로는 SKU가 아님",
+    "fabric": {
+      "examples": ["코튼 30수", "테릴렌 폴리", "하이브리드 쿨링", "워셔블 메리노"],
+      "validation": ["해기 가능?", "쿨링 기능성?", "원가율 BTA 밴드 부합?"]
+    },
+    "trim": {
+      "examples": ["YKK 지퍼", "와키 시그니처 라벨", "릴리 자수 패치"],
+      "validation": ["라벨 내 로고 형태 변형 0건? (token: logo.deformation)"]
+    },
+    "colorway": {
+      "examples": ["signature-yellow", "black", "white", "sky-blue"],
+      "validation": ["color.allowlist 내 색상만 사용?"]
+    },
+    "silhouette": {
+      "examples": ["오버핏", "크롭", "와이드", "테이퍼드", "릴랙스"],
+      "validation": ["타겟 18~25세 트렌드리더 부합?"]
+    },
+    "graphic": {
+      "examples": ["릴리 doodle", "와키 graffiti", "플라이트 IP"],
+      "validation": ["graphic-style.ip-application 부합?", "도용·표절 0건?"]
+    }
+  },
+
+  "molecule": {
+    "$description": "Atom 조합 = SKU 1개 (BTA 태그 필수)",
+    "schema": {
+      "sku_id": "string (예: 26SS-W-TS-001)",
+      "category": "categories.json 참조",
+      "fabric_ref": "atom.fabric",
+      "trim_ref": "atom.trim",
+      "colorway_ref": "atom.colorway",
+      "silhouette_ref": "atom.silhouette",
+      "graphic_ref": "atom.graphic | null",
+      "bta_tag": "basic | trend | accent (필수, CRITICAL #1)",
+      "pricing_krw": "bta.pricing-band-krw 밴드 검증",
+      "cost_rate": "bta.cost-rate 밴드 검증"
+    },
+    "validation": [
+      "bta_tag 누락 시 block",
+      "pricing/cost 밴드 이탈 시 warn",
+      "color.allowlist 외 색상 시 block"
+    ]
+  },
+
+  "organism": {
+    "$description": "SKU 조합 = Look 1개 (3B 검증 필수)",
+    "schema": {
+      "look_id": "string (예: 26SS-LK-001)",
+      "skus": ["sku_id 배열, 보통 3~5개"],
+      "scene": "street | studio | wellness | lookbook",
+      "muse": "타겟 페르소나 (personas.json)",
+      "channel": "channels.json 참조"
+    },
+    "validation": [
+      {
+        "rule": "3B 금지 (CRITICAL #2)",
+        "check": "all(sku.bta_tag == 'basic') AND all(sku.colorway in ['black','white']) AND coordination == 'matching' → block"
+      },
+      {
+        "rule": "악센트 비율",
+        "check": "look 내 sky-blue 사용 면적 ≤ 20%"
+      }
+    ]
+  },
+
+  "template": {
+    "$description": "Look 조합 = Capsule Line-Sheet 또는 Lookbook",
+    "types": {
+      "capsule_line_sheet": {
+        "skus_count_range": [12, 60],
+        "bta_distribution_required": true,
+        "channels_derived": ["musinsa", "29cm", "sns_main", "offline_pop_up"]
+      },
+      "lookbook": {
+        "looks_count_range": [8, 24],
+        "scenes_required": ["street", "studio"],
+        "channel_variants_auto_generate": ["instagram_reel", "youtube_short", "musinsa_thumbnail"]
+      },
+      "imc_campaign": {
+        "hero_sku_required": true,
+        "bamp_validation": true,
+        "channel_mix": ["sns", "offline", "celeb", "ugc"]
+      }
+    }
+  },
+
+  "composition_rules": {
+    "$description": "조합 시 강제 검증",
+    "atom_to_molecule": "모든 SKU는 atom 5종 모두 또는 (graphic 제외) 4종 명시",
+    "molecule_to_organism": "Look 구성 시 BTA 비율 design-tokens.bta.ratio 준수",
+    "organism_to_template": "Capsule 전체 BTA 분포 = Basic 40~50% / Trend 30~40% / Accent 15~25%",
+    "any_layer": "design-tokens.rules.* 위반 0건 (3B/로고변형/프리셋 위조)"
+  }
+}

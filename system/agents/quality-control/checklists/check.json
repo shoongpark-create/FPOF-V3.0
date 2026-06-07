@@ -1,0 +1,15 @@
+{
+  "stage": "Check",
+  "$description": "Check 단계 산출물(판매분석/수요예측/인사이트/갭분석) 발행 전 검증",
+  "owner": "데이터 인텔리전스 + QC 본부",
+  "items": [
+    { "id": "C-1", "check": "Match Rate (계획 대비 실판매 핏) 산출?", "must_pass": true },
+    { "id": "C-2", "check": "BTA별 KPI (Basic 재구매율, Trend 정상판매율, Accent UGC수) 모두 측정?", "must_pass": true },
+    { "id": "C-3", "check": "히트상품 상위 20%가 매출 50%+ 달성?", "must_pass": false },
+    { "id": "C-4", "check": "QR 리오더 비중 ≥ 60%?", "must_pass": false },
+    { "id": "C-5", "critical_id": 5, "check": "데이터 소스 reproducible (쿼리/스크립트 첨부)?", "must_pass": true },
+    { "id": "C-6", "check": "갭 분석에 원인·재발방지 액션 포함?", "must_pass": true },
+    { "id": "C-7", "critical_id": 5, "check": "보고문이 산출물(시트/대시보드)과 정확히 일치?", "must_pass": true }
+  ],
+  "next_stage_blocker": ["C-1", "C-2", "C-5", "C-6", "C-7"]
+}

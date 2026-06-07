@@ -1,0 +1,14 @@
+{
+  "stage": "Act",
+  "$description": "Act 단계 — PDCA 반복 결정 + 다음 시즌 인풋화",
+  "owner": "QC 본부",
+  "items": [
+    { "id": "A-1", "check": "Match Rate < 90% 시 자동 PDCA 루프 트리거?", "must_pass": true },
+    { "id": "A-2", "check": "5대 경영목표(2026) 영향 평가 — 어느 목표에 기여/저해?", "must_pass": true },
+    { "id": "A-3", "check": "인사이트가 다음 시즌 brand-strategy 인풋으로 등록?", "must_pass": true },
+    { "id": "A-4", "check": "리테로 (회고) 작성 및 retro 스킬 결과 아카이빙?", "must_pass": true },
+    { "id": "A-5", "critical_id": 5, "check": "산출물·결정·근거가 .fpof-state.json에 기록?", "must_pass": true },
+    { "id": "A-6", "check": "5대 CRITICAL 위반 0건 (BTA/3B/로고/프리셋/Evidence)?", "must_pass": true }
+  ],
+  "next_stage_blocker": ["A-1", "A-3", "A-5", "A-6"]
+}

@@ -1,0 +1,16 @@
+{
+  "stage": "Design",
+  "$description": "Design 단계 산출물(무드보드/컬러/디자인/스펙) 발행 전 검증",
+  "owner": "크리에이티브 스튜디오 + 프로덕트 랩",
+  "items": [
+    { "id": "D-1", "critical_id": 2, "check": "3B(Basic item+Basic color+Basic coordination) 룩 0건?", "must_pass": true },
+    { "id": "D-2", "critical_id": 3, "check": "로고 형태 원형 유지 + 색상 design-tokens.logo.color-allowlist 내?", "must_pass": true },
+    { "id": "D-3", "check": "색상 ⊆ design-tokens.color.allowlist (이외 사용 시 design-spec 승인 첨부)?", "must_pass": true },
+    { "id": "D-4", "check": "Sky-blue 사용 면적 ≤ 20%?", "must_pass": false },
+    { "id": "D-5", "check": "원가율이 BTA 밴드(B 27~30% / T 30~33% / A 33~38%) 내?", "must_pass": true },
+    { "id": "D-6", "check": "패턴 효율 — 원단 로스율 < 15%?", "must_pass": false },
+    { "id": "D-7", "critical_id": 4, "check": "디자인 키워드 ⊆ {Doodle, Graffiti, Pop Art, Bold Lines, Vivid Colors}?", "must_pass": true },
+    { "id": "D-8", "check": "Tech Pack 필수 필드 (소재/배색/사이즈/라벨) 모두 채움?", "must_pass": true }
+  ],
+  "next_stage_blocker": ["D-1", "D-2", "D-3", "D-5", "D-7", "D-8"]
+}

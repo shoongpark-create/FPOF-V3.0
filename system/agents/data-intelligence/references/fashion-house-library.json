@@ -1,0 +1,119 @@
+{
+  "$description": "글로벌 패션 하우스 가이드라인·룩북 라이브러리. trend-radar/market-intel 스킬이 분기별 인덱싱해 와키윌리 디자인 인풋으로 활용. StyleGuides.io 패턴 — 외부 디자인 시스템 디렉토리화",
+  "$version": "1.0.0",
+  "$update_cadence": "분기 1회 (시즌 인풋 직전)",
+  "$consumers": ["trend-radar", "market-intel", "color-intelligence", "moodboard"],
+
+  "houses": [
+    {
+      "name": "Jacquemus",
+      "tier": "luxury",
+      "tags": ["mediterranean", "minimal", "playful-silhouette"],
+      "official_url": "https://www.jacquemus.com",
+      "lookbook_url": "https://www.jacquemus.com/category/collection",
+      "instagram": "@jacquemus",
+      "relevance_to_wacky_willy": "유희성 + 강렬한 컬러 — accent 카테고리 인풋"
+    },
+    {
+      "name": "AMI Paris",
+      "tier": "contemporary",
+      "tags": ["parisian-casual", "logo-play", "color-block"],
+      "official_url": "https://www.amiparis.com",
+      "relevance_to_wacky_willy": "로고 활용 — 와키 시그니처 라벨 운영 참고"
+    },
+    {
+      "name": "Marni",
+      "tier": "luxury",
+      "tags": ["bold-color", "pattern-mix", "art-collab"],
+      "official_url": "https://www.marni.com",
+      "relevance_to_wacky_willy": "Pop Art 컬러 매칭 — color-intelligence 인풋"
+    },
+    {
+      "name": "Acne Studios",
+      "tier": "contemporary",
+      "tags": ["scandi-minimal", "denim", "graphic-tee"],
+      "official_url": "https://www.acnestudios.com",
+      "relevance_to_wacky_willy": "그래픽 티셔츠 톤 — Trend 카테고리 벤치"
+    },
+    {
+      "name": "Carhartt WIP",
+      "tier": "streetwear",
+      "tags": ["workwear", "utility", "subculture"],
+      "official_url": "https://www.carhartt-wip.com",
+      "relevance_to_wacky_willy": "스트리트 컨텍스트 — graphic-style.photo-direction 벤치"
+    },
+    {
+      "name": "Stüssy",
+      "tier": "streetwear",
+      "tags": ["graphic-heritage", "logo-icon", "collab"],
+      "official_url": "https://www.stussy.com",
+      "relevance_to_wacky_willy": "로고 운영 + 콜라보 연 2회 룰 벤치"
+    },
+    {
+      "name": "Palace",
+      "tier": "streetwear",
+      "tags": ["graphic", "skate", "drop-culture"],
+      "official_url": "https://www.palaceskateboards.com",
+      "relevance_to_wacky_willy": "Drop 캠페인 + 화제성 — Accent BTA 운영"
+    },
+    {
+      "name": "ADER ERROR",
+      "tier": "k-contemporary",
+      "tags": ["concept-driven", "color-system", "narrative"],
+      "official_url": "https://adererror.com",
+      "relevance_to_wacky_willy": "K-브랜드 컬러 시스템화 — design-tokens 운영 벤치"
+    },
+    {
+      "name": "thisisneverthat",
+      "tier": "k-streetwear",
+      "tags": ["graphic", "outdoor", "collab"],
+      "official_url": "https://thisisneverthat.com",
+      "relevance_to_wacky_willy": "K 시장 직접 경쟁 — 무신사 랭킹 정기 비교"
+    },
+    {
+      "name": "MARDI MERCREDI",
+      "tier": "k-girlish",
+      "tags": ["flower", "feminine-casual", "muse-marketing"],
+      "official_url": "https://mardimercredi.com",
+      "relevance_to_wacky_willy": "우먼스 LOVE 컬렉션 + 뮤즈 활용 벤치"
+    },
+    {
+      "name": "Loewe",
+      "tier": "luxury",
+      "tags": ["craftsmanship", "art-collab", "anagram-logo"],
+      "official_url": "https://www.loewe.com",
+      "relevance_to_wacky_willy": "IP·아트 콜라보 — ip-bible 운영 인풋"
+    },
+    {
+      "name": "Off-White",
+      "tier": "luxury-street",
+      "tags": ["typography", "industrial", "logo-play"],
+      "official_url": "https://www.off---white.com",
+      "relevance_to_wacky_willy": "타이포그래피 디스플레이 — typography.display 인풋"
+    }
+  ],
+
+  "design_systems_inspiration": {
+    "$description": "패션 외 디자인 시스템 — 토큰/컴포넌트 운영 벤치마크",
+    "items": [
+      { "name": "Material Design", "url": "https://material.io", "use": "토큰 계층화 패턴" },
+      { "name": "Polaris (Shopify)", "url": "https://polaris.shopify.com", "use": "커머스 컴포넌트 운영" },
+      { "name": "Spectrum (Adobe)", "url": "https://spectrum.adobe.com", "use": "크리에이티브 채널 일관성" },
+      { "name": "Audi Brand", "url": "https://www.audi.com/ci/en", "use": "비-IT 브랜드의 디자인 시스템화" },
+      { "name": "Skoda Brand", "url": "https://skoda-brand.com", "use": "동일 — 자동차 브랜드 가이드라인 운영" },
+      { "name": "Checklist Design", "url": "https://www.checklist.design", "use": "본 PDCA 체크리스트 패턴 원본" },
+      { "name": "Humane By Design", "url": "https://humanebydesign.com", "use": "윤리·서스테이너빌리티 트랙 인풋" }
+    ]
+  },
+
+  "ingestion_protocol": {
+    "frequency": "분기 1회 (시즌 인풋 D-30)",
+    "steps": [
+      "1. 각 하우스 lookbook_url 신규 컬렉션 확인",
+      "2. 컬러/실루엣/그래픽 키워드 추출",
+      "3. wacky-willy/design-tokens.json 색상 allowlist와 비교 → 신규 트렌드 컬러 후보 리포트",
+      "4. quality-gate Gate 4 (프리셋 진실성)에 위반 없도록 인풋만 제공, 와키윌리 프리셋 자동 갱신 금지",
+      "5. 결과를 trend-radar 산출물로 보존: workspace/[시즌]/data_fashion-house-radar_YYYY-MM-DD.json"
+    ]
+  }
+}
