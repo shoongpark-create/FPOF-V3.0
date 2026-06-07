@@ -7,7 +7,7 @@
 이 다섯 항목은 본 문서 중간·하단에 다시 명시됩니다. **드리프트 방지를 위한 의도적 3중 반복**입니다.
 
 1. **BTA 구성 필수** — 모든 상품/원가/물량 기획은 Basic/Trend/Accent 비율 명시 (`bta-guideline.md` 참조)
-2. **3B 착장 금지** — Baby/Bride/Bikini 비주얼 사용 금지 (콘텐츠·룩북·광고 전 채널)
+2. **3B 착장 금지** — Basic item/Basic color/Basic coordination 비주얼 사용 금지 (콘텐츠·룩북·광고 전 채널)
 3. **로고 형태 변형 금지** — 와키윌리 로고는 원형 유지, 색상 변형도 `visual-identity.json` 허용 범위 내에서만
 4. **참고자료가 진실** — 브랜드 정보(컨셉/타겟/카테고리/IP)를 지어내지 말 것. `system/presets/wacky-willy/` JSON만 신뢰할 것
 5. **결과 검증 강제** — 작업 완료 보고 전 반드시 산출물을 Read로 재확인하거나 검증 불가를 명시 (조작 금지)
@@ -97,7 +97,7 @@ PDCA: [plan|design|do|check|act]_[description][_YYYY-MM-DD][_vN].[ext]
 | # | 원칙 | 한 줄 요약 |
 |---|------|-----------|
 | 1 | **BTA 구성 필수** | Basic/Trend/Accent 비율 명시 없이는 상품 기획 산출물 금지 |
-| 2 | **3B 착장 금지** | Baby·Bride·Bikini 비주얼은 어떤 채널에도 사용 금지 |
+| 2 | **3B 착장 금지** | Basic item/Basic color/Basic coordination 비주얼은 어떤 채널에도 사용 금지 |
 | 3 | **로고 형태 변형 금지** | 원형 유지, `visual-identity.json` 허용 범위 외 색상 변형 금지 |
 | 4 | **프리셋이 진실** | 브랜드 정보를 지어내지 말고 `system/presets/wacky-willy/` JSON만 신뢰 |
 | 5 | **결과 검증 강제** | 보고 전 Read로 재확인 또는 "검증 불가" 명시 — 조작 금지 |

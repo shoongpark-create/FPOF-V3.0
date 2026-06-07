@@ -40,10 +40,22 @@
       }
     },
     "quality_gates": {
-      "QG1": { "status": "pending", "result": null },
-      "QG2": { "status": "pending", "result": null },
-      "QG3": { "status": "pending", "result": null },
-      "QG4": { "status": "pending", "result": null }
+      "QG1": {
+        "status": "pending",
+        "result": null
+      },
+      "QG2": {
+        "status": "pending",
+        "result": null
+      },
+      "QG3": {
+        "status": "pending",
+        "result": null
+      },
+      "QG4": {
+        "status": "pending",
+        "result": null
+      }
     }
   },
   "projects": {
@@ -103,8 +115,23 @@
   "operational": {
     "description": "PDCA와 독립적인 일상 운영 산출물 — 주간 리뷰, 회의록, 대시보드 등",
     "weekly": {
-      "latest_week": "w13",
-      "data_weeks": ["w06", "w07", "w08", "w09", "w10", "w11"],
+      "latest_week": "w19",
+      "data_weeks": [
+        "w06",
+        "w07",
+        "w08",
+        "w09",
+        "w10",
+        "w11",
+        "w12",
+        "w13",
+        "w14",
+        "w15",
+        "w16",
+        "w17",
+        "w18",
+        "w19"
+      ],
       "weeks": {
         "w09": {
           "artifacts": [
@@ -138,7 +165,7 @@
     },
     "dashboard": {
       "refresh_cycle": "weekly",
-      "latest_data_week": "w11",
+      "latest_data_week": "w19",
       "artifacts": [
         "workspace/26SS/dashboard/board_sales.html",
         "workspace/26SS/dashboard/board_product-detail.html",
@@ -150,6 +177,40 @@
         "workspace/26SS/dashboard/data_cum-detail.json",
         "workspace/26SS/dashboard/data_w10_full.json",
         "workspace/26SS/dashboard/data_w11_full.json"
+      ]
+    },
+    "dashboard_overview": {
+      "description": "발주→입고→출고→판매→재고 전체 비즈니스 플로우 대시보드. 현재 시즌 26SS만 표시·전년비교는 25SS 동일시점. 공급=성별›세부시즌›대분류›카테고리, 판매=채널›성별›세부시즌›대분류›카테고리 드릴다운. 2-트랙(공급/판매) 구조. 기존 dashboard - sales와 독립.",
+      "refresh_cycle": "weekly",
+      "latest_data_week": "w21",
+      "season_ty": "26SS",
+      "season_ly": "25SS",
+      "asof": "2026-06-02",
+      "artifacts": [
+        "workspace/26SS/dashboard - overview/board_overview.html",
+        "workspace/26SS/dashboard - overview/data_flow-supply.json",
+        "workspace/26SS/dashboard - overview/data_flow-sales.json",
+        "workspace/26SS/dashboard - overview/data_flow-supply-ts.json",
+        "workspace/26SS/dashboard - overview/data_flow-sales-ts.json",
+        "workspace/26SS/dashboard - overview/data_meta.json",
+        "workspace/26SS/dashboard - overview/_build_overview_data.py",
+        "workspace/26SS/dashboard - overview/_build_overview_timeseries.py",
+        "workspace/26SS/dashboard - overview/_build_overview_html.py",
+        "workspace/26SS/dashboard - overview/readme_overview.md"
+      ],
+      "time_modes": [
+        "누계",
+        "월별(2~6월)",
+        "주간별(W06~W21)",
+        "최근7일"
+      ],
+      "drilldown_columns": "단일 단위-반응 칼럼. 공급=계층4(성별·세부·대분류·카테고리)+스타일·발주·입고·출고·판매·재고·소진율+우측 전년비교 블록. 판매=계층5(채널·성별·세부·대분류·카테고리)+판매·할인율·점유율+전년블록. 단위 토글(수량/순매출/택가)이 KPI·양 트리 값 전환(순매출 모드: 공급 판매만 net, 발주/입고/출고/재고=택가). 전년비교▾ 토글·가로스크롤. 채널믹스=실매출 고정. 필터 드롭다운은 각 표 헤더에 배치(공급=성별·세부·대분류·카테고리, 판매=+채널) — 상단바는 기간·단위·초기화만(중복 제거), FILTSEL 동기화. 시계열에 out_t(출고 택가) 포함. 퍼널·워터폴·채널믹스도 기간·단위 토글 반응(supPipeline·salArr unit-aware) + 전년비교(워터폴 점선·도넛 중첩 TY/LY·바 YoY툴팁).",
+      "notes": "2026-06-02-03: 신규 생성→26SS 집중+25SS 동일시점 전년비→각 칼럼 인라인 YoY→월별/주간별 시간모드(W06~W21 시계열)→공급 드릴다운 월/주모드 입고·출고·판매 기간|누적 2칼럼 분리(발주=계획·재고=기말·소진율=누계 단일). 주차 플로우는 누계 컬럼 차분(period_* 비신뢰). 3-소스 독립 재계산 일치+Playwright 모드전환/기간누적 검증(에러 0). 월/주 커버리지 W06~(1월분 W06 합산), 누계는 시즌전체. | 2026-06-03: 공급(성별)·판매(채널) 실적 요약 카드 섹션 2종 추가(세부시즌·대분류·빅5 카테고리 미니막대, 단위·기간 토글 연동·전년 연한막대). Playwright 검증: 콘솔에러 0, 공급 9/9·판매 18/18 차트 데이터셋 JSON 독립재계산 일치, 택가 토글·월별 5월 정상.",
+      "summary_cards": "엔티티 실적 요약 카드 2종(드릴다운 위 배치). 공급=성별 카드 3개(유니/우먼스/키즈), 판매=채널 카드 11개(매출順 wrap). 각 카드: 헤더(공급=발주·판매·재고·소진율+판매YoY / 판매=판매·점유율·할인율+판매YoY) + 미니 가로막대 3개(세부시즌·대분류·빅5 카테고리). 막대=판매(단위 토글 따름) 26SS + 전년(25SS) 연한막대, 기간·단위 토글 연동, 툴팁 전년比. passSupply/passSales 필터·FILTSEL 동기화 반영."
+    },
+    "meetings": {
+      "artifacts": [
+        "workspace/26SS/meeting/meeting_category-unit-operator_2026-04-29.md"
       ]
     },
     "season_strategy": {
@@ -185,7 +246,8 @@
     },
     "context_notes": [
       "2026-03-11: 시즌 26SS 초기화 — 이전 산출물 기록 삭제, Plan 단계부터 새로 시작",
-      "2026-03-12: PDCA/운영 분리 — 시즌 PDCA는 전략 마일스톤만 추적, 일상 운영(weekly/dashboard/프로젝트)은 operational 섹션에서 독립 관리"
+      "2026-03-12: PDCA/운영 분리 — 시즌 PDCA는 전략 마일스톤만 추적, 일상 운영(weekly/dashboard/프로젝트)은 operational 섹션에서 독립 관리",
+      "2026-06-05: 대표보고 deck 적대적 QA 2차(8차원 리뷰+3렌즈 검증, 140 에이전트) — 발견 44건 중 확정 19건+결론장 의사결정 요청(D1) 소스레벨 반영. det-7 백만값 병기·라인차트 Y축·본장 SVG 선형화(slide 4·22)·채널/BTA 브리지 각주·− 글리프 통일·CSS 가독성. 재렌더 trace ALL CLEAN·3해상도 오버플로 0·콘솔 0"
     ],
     "todo": [],
     "decisions_log": [

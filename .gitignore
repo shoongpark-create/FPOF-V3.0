@@ -16,3 +16,6 @@ system/data/market-intel/
 
 # Google Workspace CLI credentials (gws auth로 생성)
 .config/gws/
+
+# Codex CLI 스킬 심링크 (머신 종속 절대경로)
+.codex/
