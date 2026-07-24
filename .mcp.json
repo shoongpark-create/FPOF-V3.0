@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "gbrain": {
+      "type": "stdio",
+      "command": "gbrain",
+      "args": [
+        "serve"
+      ],
+      "env": {}
+    }
+  }
+}

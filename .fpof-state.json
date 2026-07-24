@@ -115,7 +115,7 @@
   "operational": {
     "description": "PDCA와 독립적인 일상 운영 산출물 — 주간 리뷰, 회의록, 대시보드 등",
     "weekly": {
-      "latest_week": "w19",
+      "latest_week": "w23",
       "data_weeks": [
         "w06",
         "w07",
@@ -160,38 +160,56 @@
         },
         "w13": {
           "artifacts": []
+        },
+        "w22": {
+          "artifacts": [
+            "workspace/26SS/weekly/w22/sheet_order-production-status_w22.xlsx",
+            "workspace/26SS/weekly/w22/_build_order-production-status_w22.py"
+          ],
+          "notes": "2026-06-11: 26SS+26FW 누적 발주생산현황 시트 생성 (product-master w22 기반, 4탭: 발주생산현황·요약·BTA구성·data). 계층 시즌→세부시즌→대분류→카테고리(성별 제외, data 탭엔 성별 보존). 전 금액 부가세 제외 — 원가=수량×cost_pre(마스터 단가, order_amt 실단가와 95 SKU 차이), 택가=÷1.1. 26FW 원가 대부분 미입력으로 수량·택가만 신뢰"
         }
       }
     },
     "dashboard": {
       "refresh_cycle": "weekly",
-      "latest_data_week": "w21",
-      "artifacts": [
-        "workspace/26SS/dashboard - sales/board_master-review_new.html",
-        "workspace/26SS/dashboard - sales/board_season-planning_new.html",
-        "workspace/26SS/dashboard - sales/data_sales.json",
-        "workspace/26SS/dashboard - sales/data_product-status.json",
-        "workspace/26SS/dashboard - sales/data_per-detail.json",
-        "workspace/26SS/dashboard - sales/data_per-styles.json",
-        "workspace/26SS/dashboard - sales/data_cum-detail.json"
+      "latest_data_week": "w26",
+      "structure": "2026-06-15 재설계 5보드→2보드(상품·채널). 2026-06-16 채널보드도 3브랜드 비교→WW 단독 채널/매장 드릴다운(4탭)으로 전환. 상세: dashboard - sales/README_dashboard_structure.md",
+      "ui_boards": [
+        "workspace/26SS/dashboard - sales/board_product.html",
+        "workspace/26SS/dashboard - sales/board_channel.html"
       ],
-      "notes": "2026-06-07 경로 현행화: 구 'dashboard/' → 'dashboard - sales/', 주차 데이터 w21까지 (data_w10~w21_full.json 동일 폴더)"
+      "headless_build_bases": [
+        "workspace/26SS/dashboard - overview/board_overview.html"
+      ],
+      "artifacts": [
+        "workspace/26SS/dashboard - sales/board_product.html",
+        "workspace/26SS/dashboard - sales/board_channel.html",
+        "workspace/26SS/dashboard - sales/data_ww-analysis.json",
+        "workspace/26SS/dashboard - sales/_build_ww_analysis.py",
+        "workspace/26SS/dashboard - sales/_render_ww_product.py",
+        "workspace/26SS/dashboard - sales/README_dashboard_structure.md",
+        "workspace/26SS/dashboard - sales/data_channel-analysis.json",
+        "workspace/26SS/dashboard - sales/_build_channel_analysis.py",
+        "workspace/26SS/dashboard - sales/_render_ww_channel.py"
+      ],
+      "notes": "2026-06-15 구조 재설계: 5보드→화면용 2보드. ① board_product.html = ⭐와키윌리 운영 드릴다운·분석 4탭(운영·수익성 드릴다운: 성별→대분류→아이템 11지표 [26SS+전년비] / 소진·재고·리오더: 세부시즌·성별·대분류·아이템 필터+SKU(스타일+색상)단위 리오더후보·과잉재고 / 추세선·속도·YoY: 세부시즌(봄여름)·성별·대분류·아이템 선택형 26SS vs 25SS SVG+YoY·히트/부진 패널(균형배치)+빠른/느린소진 / 베스트·채널매장: 필터×기간(주간·당월·시즌누적)×금액순/수량순+정렬값컬럼+11지표, 스타일 클릭→기간별 채널·매장(막대)+주차추이·아이템평균 펼침). 빌드 _build_ww_analysis.py→data_ww-analysis.json(SKU 902 베이스)→_render_ww_product.py. ② board_channel.html = 채널 온/오프×3브랜드(커버낫·와키윌리·리) 매출비교 + 매장 드릴다운(이미지#2). 빌드 _build_brand_matrix_data.py→_render_brand_channel.py. 발주~재고=WW만, 3브랜드는 매출만(채널보드). 앵커 overview 일치(발주876,836·입고755,222·판매303,608·판매율40.2%). Playwright 두 보드 에러0. ⚠ 전년비 LY정의·베스트 스타일단위LY불가(품목YoY)·이익률=총이익(profit_pre)·추세선 overview ts 재사용·CEO덱 대기. 구버전·weekly/monthly/season HTML은 _retired_boards_2026-06-15/."
     },
     "dashboard_weekly_monthly": {
-      "description": "sales 대시보드에서 분리 신규생성한 주간(6탭)·월간(7탭) 대시보드 — 2026-06-04",
-      "refresh_cycle": "weekly/monthly",
+      "description": "RETIRED 2026-06-15 — board_weekly.html·board_monthly.html은 _retired_boards_2026-06-15/로 폐기. 상품 모니터링은 board_product.html(주간/월간 토글)로 통합 대체.",
+      "refresh_cycle": "retired",
       "artifacts": [
-        "workspace/26SS/dashboard - weekly/board_weekly.html",
-        "workspace/26SS/dashboard - monthly/board_monthly.html"
+        "workspace/26SS/_retired_boards_2026-06-15/board_weekly.html",
+        "workspace/26SS/_retired_boards_2026-06-15/board_monthly.html"
       ]
     },
     "dashboard_overview": {
+      "role_2026_06_15": "화면 폐기 → headless 빌드 베이스로 전환. _build_wwf_module.py가 board_overview.html(line 248~)에서 WWFlow 엔진을 추출해 _wwf_parts.json 생성 → 이게 board_product/board_channel의 공급·판매 엔진. 발주→재고 공급 플로우는 board_product.html '공급 플로우' 탭으로, 채널 판매는 board_channel.html로 흡수됨. board_overview.html 자체는 열지 않으나 주간 롤·엔진 추출에 필요해 보존.",
       "description": "발주→입고→출고→판매→재고 전체 비즈니스 플로우 대시보드. 현재 시즌 26SS만 표시·전년비교는 25SS 동일시점. 공급=성별›세부시즌›대분류›카테고리, 판매=채널›성별›세부시즌›대분류›카테고리 드릴다운. 2-트랙(공급/판매) 구조. 기존 dashboard - sales와 독립.",
       "refresh_cycle": "weekly",
-      "latest_data_week": "w21",
+      "latest_data_week": "w26",
       "season_ty": "26SS",
       "season_ly": "25SS",
-      "asof": "2026-06-02",
+      "asof": "2026-07-06",
       "artifacts": [
         "workspace/26SS/dashboard - overview/board_overview.html",
         "workspace/26SS/dashboard - overview/data_flow-supply.json",
@@ -253,7 +271,13 @@
     "context_notes": [
       "2026-03-11: 시즌 26SS 초기화 — 이전 산출물 기록 삭제, Plan 단계부터 새로 시작",
       "2026-03-12: PDCA/운영 분리 — 시즌 PDCA는 전략 마일스톤만 추적, 일상 운영(weekly/dashboard/프로젝트)은 operational 섹션에서 독립 관리",
-      "2026-06-05: 대표보고 deck 적대적 QA 2차(8차원 리뷰+3렌즈 검증, 140 에이전트) — 발견 44건 중 확정 19건+결론장 의사결정 요청(D1) 소스레벨 반영. det-7 백만값 병기·라인차트 Y축·본장 SVG 선형화(slide 4·22)·채널/BTA 브리지 각주·− 글리프 통일·CSS 가독성. 재렌더 trace ALL CLEAN·3해상도 오버플로 0·콘솔 0"
+      "2026-06-05: 대표보고 deck 적대적 QA 2차(8차원 리뷰+3렌즈 검증, 140 에이전트) — 발견 44건 중 확정 19건+결론장 의사결정 요청(D1) 소스레벨 반영. det-7 백만값 병기·라인차트 Y축·본장 SVG 선형화(slide 4·22)·채널/BTA 브리지 각주·− 글리프 통일·CSS 가독성. 재렌더 trace ALL CLEAN·3해상도 오버플로 0·콘솔 0",
+      "2026-06-10: 5월 대표보고 deck 어투 재정비 — 전투적/AI풍 표현 30건 톤다운(사수→회복·탄환→입고 등), 정합 보강(영업이익률 4월 표기·+64억 연간 표기·선입고 기간 표기·− 글리프). 수치 무변경. deck+bak_predetail+W21스냅샷 3파일 동기, Playwright 27장·잘림 0·콘솔 0. ⚠ _datapack.py 미반영(6월 덱 재렌더 시 재반영 필요)",
+      "2026-06-16: 채널보드(board_channel.html) 3브랜드 비교→WW 단독 채널/매장 1차축 순수 매출 분석 4탭으로 전환(상품보드 미러). ①채널 운영·수익성 매트릭스 ②할인 건전성·정상/이월·체질 ③채널 추세·전주비·전년비(사분면) ④매장 랭킹·채널별 베스트. 설계는 4관점 Workflow 패널→검증→종합. 파이프라인 _build_channel_analysis.py→data_channel-analysis.json→_render_ww_channel.py(Playwright 4탭 errors 0). ⚠채널 단위 재고/소진/리오더 불가(product-master 채널 차원 없음). 구 brand-matrix 스크립트는 _retired_boards_2026-06-15/obsolete_brand_matrix_2026-06-16/로 폐기(board_channel.html 덮어쓰기 방지).",
+      "2026-06-29: W25 2보드 주간 롤 완료(asof 06-29). overview ts(WEEKS+w25)→product(_build_ww_analysis PM/SR/ASOF/WEEKS_TS w25)→channel(W_TY/W_PREV=w25/w24, 노트 전주비 W_PREV 동적화). 두 보드 Playwright errors 0, meta.week=W25 갱신 확인. 원시 xlsx 독립재계산 일치(7d 1,114백만/26,731·누계전시즌 30,606백만/636,028·26SS실판매 17.7십억·발주882,406·입고786,328·판매340,033·재고446,360). W25=7d 순매출 1,114백만 WoW +17.8%(W22~W24 하락 반등)·누계YoY −8.6%(W24 −13.1%서 개선)·판매율 43.2%(+1.5%p)·우먼스57.2%vs유니38.2%(격차19.0%p 지속). _bak_w24_* 백업. SKU 902→901.",
+      "2026-07-07: board_product 탭① 드릴다운을 5단 행 계층으로 재구성 — 26SS 전체→세부시즌(봄/여름/가을)→성별→대분류→아이템 (1차 칼럼 방식 시안은 사용자 피드백으로 롤백). _build_ww_analysis.py ly 키를 sub|gd|dae|item로 확장(weekly_LY colB=season, 49→59 레코드) → 세부시즌 행 전년비=전년 동일 세부시즌比. 부수 수정: 탭③ YoY 패널 styleMatchTrend가 s.sub 필터링하는데 LY에 sub 없어 세부시즌 선택 시 전년값 공백이던 잠재버그 해소. 검증: verify errs 0·앵커 불변·독립재계산 일치(봄 발주 342,210 ▼35%·누계판매 128,024 ▼31% / 여름 537,496 ▼21%·228,187 ▼24%)·펼침 스크린샷 확인. 가을=선발주 2SKU 행, 전년비 공란.",
+      "2026-07-07: dashboard - sales 폴더 정리 — 미사용 80파일을 _retired_boards_2026-06-15/obsolete_master-review_legacy_2026-07-07/로 이동(삭제 아님): board_master-review_new.html(W23 동결)+전용 json 5종+구 9단계 파이프라인 스크립트 전부+data_wNN_full(w10~w23)+market-trend·spec-analysis·product-images+_bak_w22~w24. 잔존=현행 세트 15파일(보드2·json2·스크립트6·_bak_w25_4·README). 정리 후 verify 재실행 두 보드 errors 0. CEO 월리뷰 덱 재작업 시 master-review 소스는 아카이브 참조. headless_build_bases에서 master-review 제거.",
+      "2026-07-07: W26 2보드 주간 롤 완료(asof 07-06). 표준 절차: overview ts(WEEKS+w26, WEEK_MONTH w26=7월)→product(PM/SR/ASOF/WEEKS_TS w26)→channel(w26/w25). CUR_MONTH 6월→7월 전환(당월=7월 초, sales-review 7월 행 21,707건 확인 후 결정). 두 보드 verify errors 0, meta.week=W26·asof 07-06 확인. 원시 xlsx 독립재계산 일치(7d 1,346백만/33,263 vs 보드 1,345·cum 31,629 vs 31,623 = 0.02% 반올림 수준). W26=7d 순매출 1,345백만 WoW +20.7%/수량 +24.4%(2주 연속 반등)·할인율 28.9%·누계YoY −8.5%(W25 −8.6%)·판매율 43.7%(+0.5%p)·우먼스58.7%vs유니38.5%(격차 20.2%p로 소폭 확대)·재고 459,073·입고 815,191. _bak_w25_* 백업. SKU 901 유지."
     ],
     "todo": [],
     "decisions_log": [
